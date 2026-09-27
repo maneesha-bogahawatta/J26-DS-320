@@ -1,0 +1,77 @@
+# ============================================================
+# PROACTIVE ANOMALY DETECTION — .gitignore
+# ============================================================
+
+# ---- DATASETS (too large for Git — use Google Drive / OneDrive) ----
+datasets/raw/
+datasets/processed/
+datasets/annotations/
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+
+# ---- MODEL CHECKPOINTS & WEIGHTS (too large for Git) ----
+experiments/checkpoints/
+experiments/logs/
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.h5
+*.pkl
+*.safetensors
+!shared/detection/yolov8n.pt.README
+
+# ---- PYTHON ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ---- VIRTUAL ENVIRONMENTS ----
+venv/
+env/
+.env
+.venv/
+ENV/
+
+# ---- IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ---- JUPYTER ----
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ---- OS FILES ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# ---- LOGS & TEMP ----
+*.log
+*.tmp
+*.temp
+mlruns/
+wandb/
+outputs/
+runs/
+
+# ---- COMPILED DOCS ----
+docs/**/*.pdf
+!docs/proposal/*.pdf

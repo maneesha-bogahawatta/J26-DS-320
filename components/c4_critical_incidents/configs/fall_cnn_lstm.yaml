@@ -1,0 +1,75 @@
+# ============================================================
+# Component 4 — Fall Detection CNN-LSTM Configuration
+# ============================================================
+
+model:
+  name: "fall_cnn_lstm"
+  version: "1.0"
+
+  cnn:
+    layers: 3
+    channels: [32, 64, 128]
+    kernel_size: 3
+    dropout: 0.3
+
+  lstm:
+    hidden_size: 128
+    num_layers: 2
+    bidirectional: false
+    dropout: 0.3
+
+  classifier:
+    hidden_size: 64
+    num_classes: 2  # fall, not_fall
+
+data:
+  datasets:
+    - name: "le2i"
+      path: "${DATA_DIR}/raw/le2i/"
+      split_ratio: [0.7, 0.15, 0.15]
+    - name: "urfd"
+      path: "${DATA_DIR}/raw/urfd/"
+      split_ratio: [0.7, 0.15, 0.15]
+    - name: "gmdcsa24"
+      path: "${DATA_DIR}/raw/gmdcsa24/"
+      split_ratio: [0.7, 0.15, 0.15]
+
+  preprocessing:
+    frame_rate: 30
+    sequence_length: 30        # frames per input sequence
+    stride: 10                 # sliding window stride
+    resize: [224, 224]
+
+  augmentation:
+    horizontal_flip: true
+    temporal_jitter: true
+    brightness_range: [0.8, 1.2]
+    add_noise: true
+
+training:
+  epochs: 50
+  batch_size: 16
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: "cosine"
+  early_stopping_patience: 10
+  device: "cuda"
+
+evaluation:
+  metrics: ["precision", "recall", "f1", "auc_roc", "false_alarm_rate"]
+  confidence_threshold: 0.7
+  temporal_confirmation_frames: 10  # must be classified as fall for N consecutive frames
+
+  robustness_conditions:
+    - "original"
+    - "low_resolution_240p"
+    - "compression_50pct"
+    - "motion_blur"
+    - "partial_occlusion_30pct"
+    - "low_light"
+    - "image_noise"
+
+output:
+  checkpoint_dir: "${CHECKPOINT_DIR}/c4_fall/"
+  log_dir: "${LOG_DIR}/c4_fall/"
+  evidence_dir: "experiments/evidence/c4_fall/"
