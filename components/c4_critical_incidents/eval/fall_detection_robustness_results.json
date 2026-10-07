@@ -1,0 +1,44 @@
+{
+  "clean": {
+    "precision": 1.0,
+    "recall": 0.8,
+    "f1": 0.8888888888888888,
+    "detection_failures": 0,
+    "time_sec": 176.8
+  },
+  "low_res": {
+    "precision": 0.6666666666666666,
+    "recall": 0.8,
+    "f1": 0.7272727272727273,
+    "detection_failures": 0,
+    "time_sec": 95.9
+  },
+  "blur": {
+    "precision": 0.5714285714285714,
+    "recall": 0.8,
+    "f1": 0.6666666666666666,
+    "detection_failures": 0,
+    "time_sec": 98.8
+  },
+  "noise": {
+    "precision": 0.5714285714285714,
+    "recall": 0.8,
+    "f1": 0.6666666666666666,
+    "detection_failures": 0,
+    "time_sec": 137.9
+  },
+  "low_light": {
+    "precision": 0.8,
+    "recall": 0.8,
+    "f1": 0.8,
+    "detection_failures": 0,
+    "time_sec": 92.7
+  },
+  "occlusion": {
+    "precision": 0.6666666666666666,
+    "recall": 0.8,
+    "f1": 0.7272727272727273,
+    "detection_failures": 0,
+    "time_sec": 87.3
+  }
+}
