@@ -1,0 +1,32 @@
+{
+    "camera_id": "CAM_01_INDOOR",
+    "doorway_threshold_line": [
+        [
+            300,
+            450
+        ],
+        [
+            900,
+            450
+        ]
+    ],
+    "tailgating_time_threshold_sec": 1.0,
+    "restricted_zone_polygon": [
+        [
+            200,
+            200
+        ],
+        [
+            800,
+            200
+        ],
+        [
+            800,
+            600
+        ],
+        [
+            200,
+            600
+        ]
+    ]
+}
