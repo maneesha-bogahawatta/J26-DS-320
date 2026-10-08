@@ -1,0 +1,16 @@
+model:
+  backbone: "r2plus1d_18"
+  num_classes: 2
+  sample_frames: 16
+  frame_size: [112, 112]
+  confidence_threshold: 0.70
+
+inference:
+  # Temporal sliding window & debouncing
+  stride: 4
+  consecutive_alerts_required: 3
+  cooldown_frames: 30
+
+labels:
+  0: "NonFight"
+  1: "Fight"
