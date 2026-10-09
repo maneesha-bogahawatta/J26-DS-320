@@ -84,3 +84,13 @@ test_doorway.mp4
 convert_mot.py
 *.mp4
 
+test_doorway.mp4
+
+# Ignore local video conversions and temporary datasets
+*.mp4
+*.avi
+*.zip
+test_doorway.mp4
+
+# Ignore downloaded weights
+*.pt

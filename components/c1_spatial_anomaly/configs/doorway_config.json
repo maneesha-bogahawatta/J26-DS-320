@@ -1,31 +1,31 @@
 {
-    "camera_id": "CAM_01_INDOOR",
+    "camera_id": "SHANGHAITECH_SCENE_01",
     "portal_threshold_line": [
         [
-            200,
-            450
+            100,
+            320
         ],
         [
-            900,
-            450
+            750,
+            320
         ]
     ],
     "restricted_zone_polygon": [
         [
-            300,
-            200
+            400,
+            150
         ],
         [
-            800,
-            200
+            700,
+            150
         ],
         [
-            800,
-            600
+            700,
+            350
         ],
         [
-            300,
-            600
+            400,
+            350
         ]
     ],
     "tailgating_time_threshold_sec": 1.0,
