@@ -1,8 +1,8 @@
 {
     "camera_id": "CAM_01_INDOOR",
-    "doorway_threshold_line": [
+    "portal_threshold_line": [
         [
-            300,
+            200,
             450
         ],
         [
@@ -10,10 +10,9 @@
             450
         ]
     ],
-    "tailgating_time_threshold_sec": 1.0,
     "restricted_zone_polygon": [
         [
-            200,
+            300,
             200
         ],
         [
@@ -25,8 +24,10 @@
             600
         ],
         [
-            200,
+            300,
             600
         ]
-    ]
+    ],
+    "tailgating_time_threshold_sec": 1.0,
+    "crowd_density_limit": 4
 }

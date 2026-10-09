@@ -14,6 +14,10 @@ datasets/annotations/
 *.flv
 *.webm
 
+datasets/
+*.mp4
+*.zip
+
 # ---- MODEL CHECKPOINTS & WEIGHTS (too large for Git) ----
 experiments/checkpoints/
 experiments/logs/
@@ -75,3 +79,8 @@ runs/
 # ---- COMPILED DOCS ----
 docs/**/*.pdf
 !docs/proposal/*.pdf
+
+test_doorway.mp4
+convert_mot.py
+*.mp4
+
