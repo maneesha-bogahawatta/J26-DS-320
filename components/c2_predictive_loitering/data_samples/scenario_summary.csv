@@ -1,0 +1,15 @@
+video_id,xml_file,annotated_frames,trajectory_rows,unique_tracks,first_frame,last_frame
+Browse1,br1gt.xml,1043,2237,4,0,1042
+Browse2,br2gt.xml,875,897,4,0,874
+Browse3,br3gt.xml,911,1004,5,0,910
+Browse4,br4gt.xml,1139,881,3,0,1138
+Browse_WhileWaiting1,bww1gt.xml,791,1306,3,0,790
+Browse_WhileWaiting2,bww2gt.xml,1895,1075,1,0,1894
+Meet_Crowd,mc1gt.xml,491,1164,4,0,490
+Meet_Split_3rdGuy,ms3ggt.xml,923,1733,5,0,922
+Meet_WalkSplit,mws1gt.xml,623,1788,9,0,622
+LeftBag,lb1gt.xml,1439,2289,6,0,1438
+LeftBag_AtChair,lb2gt.xml,1115,1939,8,0,1114
+LeftBag_BehindChair,lbbcgt.xml,1067,1523,7,0,1066
+LeftBag_PickedUp,lbpugt.xml,1355,1575,4,0,1354
+LeftBox,lbgt.xml,863,1376,4,0,862
