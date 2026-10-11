@@ -46,7 +46,7 @@ class SpatialAnomalyEngine:
     def process_frame(self, tracks, camera_id="CAM_01"):
         """
         tracks: list of (track_id, [x1, y1, x2, y2])
-        Returns: tuple of (alerts_list, annotated_meta)
+        Returns: list of alerts dictionary
         """
         current_time = time.time()
         alerts = []
@@ -75,17 +75,24 @@ class SpatialAnomalyEngine:
                         delta_t = current_time - self.last_entry_time
                         if delta_t < self.tailgating_time_threshold and track_id != self.last_leader_id:
                             self.flagged_tailgaters.add(track_id)
+                            leader_id_val = int(self.last_leader_id) if self.last_leader_id is not None else -1
                             alerts.append({
                                 "timestamp": datetime.now(timezone.utc).isoformat(),
                                 "camera_id": camera_id,
-                                "event_type": "TAILGATING",
-                                "threat_score": 0.92,
-                                "lead_track_id": int(self.last_leader_id),
-                                "breach_track_id": int(track_id),
-                                "delta_time_seconds": round(float(delta_t), 2),
-                                "bounding_boxes": [list(map(float, bbox))],
+                                "event_type": "TAILGATING_BREACH",
+                                "threat_score": 0.95,
+                                "authorized_entity": {
+                                    "track_id": leader_id_val,
+                                    "status": "AUTHORIZED_PROXY" if leader_id_val != -1 else "UNKNOWN",
+                                    "interaction_detected": False
+                                },
+                                "unauthorized_entity": {
+                                    "track_id": int(track_id),
+                                    "status": "UNAUTHORIZED_TAILGATER",
+                                    "delta_time_seconds": round(float(delta_t), 2)
+                                },
                                 "evidence": {
-                                    "explanation": f"Track {track_id} trailed leader {self.last_leader_id} through portal in {delta_t:.2f}s."
+                                    "explanation": f"Unauthorized track {track_id} bypassed access control by tailgating leader {leader_id_val} within {delta_t:.2f}s."
                                 }
                             })
                         else:
@@ -99,7 +106,6 @@ class SpatialAnomalyEngine:
             # 2. RESTRICTED ZONE INTRUSION LOGIC (Point-in-Polygon)
             # ----------------------------------------------------
             if self.restricted_polygon is not None:
-                # cv2.pointPolygonTest returns > 0 if inside, 0 if on edge, < 0 if outside
                 dist = cv2.pointPolygonTest(self.restricted_polygon, foot_pt, False)
                 if dist >= 0:
                     if track_id not in self.active_intrusions:
@@ -123,9 +129,7 @@ class SpatialAnomalyEngine:
         # ----------------------------------------------------
         # 3. SUDDEN CROWDING DENSITY LOGIC
         # ----------------------------------------------------
-        # Check active persons inside a localized area or frame count
         if len(tracks) >= self.crowd_density_limit:
-            # Throttle crowding alerts to once every 5 seconds to prevent alert floods
             if current_time - self.last_crowd_alert_time > 5.0:
                 self.last_crowd_alert_time = current_time
                 all_bboxes = [list(map(float, b)) for _, b in tracks]

@@ -1,33 +1,7 @@
 {
-    "camera_id": "SHANGHAITECH_SCENE_01",
-    "portal_threshold_line": [
-        [
-            100,
-            320
-        ],
-        [
-            750,
-            320
-        ]
-    ],
-    "restricted_zone_polygon": [
-        [
-            400,
-            150
-        ],
-        [
-            700,
-            150
-        ],
-        [
-            700,
-            350
-        ],
-        [
-            400,
-            350
-        ]
-    ],
-    "tailgating_time_threshold_sec": 1.0,
-    "crowd_density_limit": 4
+  "camera_id": "MOT17_04_DOORWAY",
+  "portal_threshold_line": [[400, 700], [1500, 700]],
+  "restricted_zone_polygon": [[700, 300], [1200, 300], [1200, 650], [700, 650]],
+  "tailgating_time_threshold_sec": 1.0,
+  "crowd_density_limit": 5
 }
