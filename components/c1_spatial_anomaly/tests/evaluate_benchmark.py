@@ -44,7 +44,7 @@ class SequenceLoader:
         if self.cap is not None:
             self.cap.release()
 
-def run_benchmark(dataset_root, line_y=320, max_sequences=5):
+def run_benchmark(dataset_root, line_y=320, max_sequences=10):
     model = YOLO("yolov8n.pt")
     engine = SpatialAnomalyEngine(
         portal_line=((100, line_y), (750, line_y)),
@@ -65,7 +65,7 @@ def run_benchmark(dataset_root, line_y=320, max_sequences=5):
     total_frames = 0
     total_latency_ms = 0.0
     frame_latencies = []
-    alerts_summary = {"TAILGATING": 0, "ZONE_INTRUSION": 0, "CROWD_FORMATION": 0}
+    alerts_summary = {"tailgating": 0, "zone_intrusion": 0, "crowding": 0}
 
     print(f"[INFO] Benchmarking {len(entries)} sequence(s) from {dataset_root}...")
 

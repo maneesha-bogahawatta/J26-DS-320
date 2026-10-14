@@ -1,7 +1,17 @@
 import time
+import sys
 import cv2
 import numpy as np
 from datetime import datetime, timezone
+from pathlib import Path
+
+# Add project root (J26-DS-320) to sys.path to resolve shared imports
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from shared.schemas.event_schema import IncidentEvent
+
 
 class SpatialAnomalyEngine:
     def __init__(self, portal_line=((300, 450), (900, 450)), 
@@ -27,7 +37,7 @@ class SpatialAnomalyEngine:
         self.last_crowd_alert_time = 0
 
     def get_footprint(self, bbox):
-        """Calculates bottom-center coordinate of bounding box."""
+        """Calculates bottom-center coordinate of bounding box [x1, y1, x2, y2]."""
         x1, y1, x2, y2 = bbox
         return int((x1 + x2) / 2), int(y2)
 
@@ -43,10 +53,13 @@ class SpatialAnomalyEngine:
                 return True
         return False
 
-    def process_frame(self, tracks, camera_id="CAM_01"):
+    def process_frame(self, tracks, camera_id="CAM_01", frame_number=None):
         """
         tracks: list of (track_id, [x1, y1, x2, y2])
-        Returns: list of alerts dictionary
+        camera_id: camera identifier string
+        frame_number: optional int specifying frame index in stream
+        
+        Returns: list of alert dictionaries conforming to shared IncidentEvent schema
         """
         current_time = time.time()
         alerts = []
@@ -76,25 +89,25 @@ class SpatialAnomalyEngine:
                         if delta_t < self.tailgating_time_threshold and track_id != self.last_leader_id:
                             self.flagged_tailgaters.add(track_id)
                             leader_id_val = int(self.last_leader_id) if self.last_leader_id is not None else -1
-                            alerts.append({
-                                "timestamp": datetime.now(timezone.utc).isoformat(),
-                                "camera_id": camera_id,
-                                "event_type": "TAILGATING_BREACH",
-                                "threat_score": 0.95,
-                                "authorized_entity": {
-                                    "track_id": leader_id_val,
-                                    "status": "AUTHORIZED_PROXY" if leader_id_val != -1 else "UNKNOWN",
-                                    "interaction_detected": False
-                                },
-                                "unauthorized_entity": {
-                                    "track_id": int(track_id),
-                                    "status": "UNAUTHORIZED_TAILGATER",
-                                    "delta_time_seconds": round(float(delta_t), 2)
-                                },
-                                "evidence": {
-                                    "explanation": f"Unauthorized track {track_id} bypassed access control by tailgating leader {leader_id_val} within {delta_t:.2f}s."
-                                }
-                            })
+                            
+                            # Construct shared IncidentEvent for tailgating
+                            event = IncidentEvent(
+                                timestamp=datetime.now(timezone.utc).isoformat(),
+                                camera_id=camera_id,
+                                event_type="tailgating",
+                                threat_score=0.95,
+                                person_id=f"P-{track_id}",
+                                bounding_box=list(map(int, bbox)),
+                                zone="secure_portal",
+                                explanation_signals=[
+                                    f"authorized_leader_P-{leader_id_val}",
+                                    f"time_delta_{delta_t:.2f}s",
+                                    "unauthorized_slipstream_entry"
+                                ],
+                                model_version="c1_spatial_v1.0",
+                                frame_number=frame_number
+                            )
+                            alerts.append(event.to_dict())
                         else:
                             self.last_leader_id = track_id
                             self.last_entry_time = current_time
@@ -110,19 +123,24 @@ class SpatialAnomalyEngine:
                 if dist >= 0:
                     if track_id not in self.active_intrusions:
                         self.active_intrusions.add(track_id)
-                        alerts.append({
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "camera_id": camera_id,
-                            "event_type": "ZONE_INTRUSION",
-                            "threat_score": 0.88,
-                            "lead_track_id": None,
-                            "breach_track_id": int(track_id),
-                            "delta_time_seconds": None,
-                            "bounding_boxes": [list(map(float, bbox))],
-                            "evidence": {
-                                "explanation": f"Track {track_id} unauthorized entry into restricted zone polygon."
-                            }
-                        })
+                        
+                        # Construct shared IncidentEvent for zone intrusion
+                        event = IncidentEvent(
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            camera_id=camera_id,
+                            event_type="zone_intrusion",
+                            threat_score=0.88,
+                            person_id=f"P-{track_id}",
+                            bounding_box=list(map(int, bbox)),
+                            zone="restricted_perimeter",
+                            explanation_signals=[
+                                "point_in_polygon_positive",
+                                f"footprint_x{foot_pt[0]}_y{foot_pt[1]}"
+                            ],
+                            model_version="c1_spatial_v1.0",
+                            frame_number=frame_number
+                        )
+                        alerts.append(event.to_dict())
                 else:
                     self.active_intrusions.discard(track_id)
 
@@ -130,21 +148,28 @@ class SpatialAnomalyEngine:
         # 3. SUDDEN CROWDING DENSITY LOGIC
         # ----------------------------------------------------
         if len(tracks) >= self.crowd_density_limit:
+            # Throttle crowding alerts to once every 5 seconds
             if current_time - self.last_crowd_alert_time > 5.0:
                 self.last_crowd_alert_time = current_time
-                all_bboxes = [list(map(float, b)) for _, b in tracks]
-                alerts.append({
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "camera_id": camera_id,
-                    "event_type": "CROWD_FORMATION",
-                    "threat_score": 0.80,
-                    "lead_track_id": None,
-                    "breach_track_id": None,
-                    "delta_time_seconds": None,
-                    "bounding_boxes": all_bboxes,
-                    "evidence": {
-                        "explanation": f"High density detected: {len(tracks)} individuals clustered simultaneously."
-                    }
-                })
+                
+                # Bounding box of the primary cluster (use first track box as anchor)
+                anchor_bbox = list(map(int, tracks[0][1])) if tracks else None
+                
+                # Construct shared IncidentEvent for crowding
+                event = IncidentEvent(
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    camera_id=camera_id,
+                    event_type="crowding",
+                    threat_score=0.80,
+                    bounding_box=anchor_bbox,
+                    zone="monitored_hallway",
+                    explanation_signals=[
+                        f"cluster_density_count_{len(tracks)}",
+                        f"density_threshold_{self.crowd_density_limit}"
+                    ],
+                    model_version="c1_spatial_v1.0",
+                    frame_number=frame_number
+                )
+                alerts.append(event.to_dict())
 
         return alerts

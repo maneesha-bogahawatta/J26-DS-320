@@ -1,7 +1,7 @@
 {
-  "camera_id": "MOT17_04_DOORWAY",
-  "portal_threshold_line": [[400, 700], [1500, 700]],
-  "restricted_zone_polygon": [[700, 300], [1200, 300], [1200, 650], [700, 650]],
+  "camera_id": "LOCAL_DOORWAY_01",
+  "portal_threshold_line": [[300, 500], [1200, 500]],
+  "restricted_zone_polygon": [[600, 200], [1000, 200], [1000, 450], [600, 450]],
   "tailgating_time_threshold_sec": 1.0,
-  "crowd_density_limit": 5
+  "crowd_density_limit": 4
 }
