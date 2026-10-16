@@ -1,7 +1,8 @@
 {
-  "camera_id": "LOCAL_DOORWAY_01",
-  "portal_threshold_line": [[300, 500], [1200, 500]],
-  "restricted_zone_polygon": [[600, 200], [1000, 200], [1000, 450], [600, 450]],
+  "camera_id": "TURNSTILE_MAIN_LOBBY",
+  "portal_threshold_line": [[400, 600], [1200, 600]],
+  "turnstile_barrier_polygon": [[500, 450], [650, 450], [650, 600], [500, 600]],
+  "ground_y_level": 600,
   "tailgating_time_threshold_sec": 1.0,
   "crowd_density_limit": 4
 }

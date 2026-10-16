@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Add project root (J26-DS-320) to sys.path to resolve shared imports
+# Add project root (J26-DS-320) to sys.path to resolve shared schema imports
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -15,17 +15,23 @@ from shared.schemas.event_schema import IncidentEvent
 
 class SpatialAnomalyEngine:
     def __init__(self, portal_line=((300, 450), (900, 450)), 
-                 restricted_polygon=None, 
+                 restricted_polygon=None,
+                 turnstile_barrier_polygon=None,
+                 ground_y_level=None,
                  tailgating_time_threshold=1.0, 
                  crowd_density_limit=4):
         """
         portal_line: tuple of ((x1, y1), (x2, y2))
         restricted_polygon: list of points [(x1, y1), (x2, y2), ...]
+        turnstile_barrier_polygon: list of points [(x1, y1), (x2, y2), ...]
+        ground_y_level: int Y coordinate representing floor level at portal line
         tailgating_time_threshold: float (seconds)
         crowd_density_limit: int (max persons allowed simultaneously)
         """
         self.portal_line = portal_line
         self.restricted_polygon = np.array(restricted_polygon, np.int32) if restricted_polygon else None
+        self.turnstile_barrier_polygon = np.array(turnstile_barrier_polygon, np.int32) if turnstile_barrier_polygon else None
+        self.ground_y_level = ground_y_level if ground_y_level is not None else portal_line[0][1]
         self.tailgating_time_threshold = tailgating_time_threshold
         self.crowd_density_limit = crowd_density_limit
 
@@ -34,6 +40,7 @@ class SpatialAnomalyEngine:
         self.last_leader_id = None
         self.flagged_tailgaters = set()
         self.active_intrusions = set()
+        self.active_barrier_breaches = set()
         self.last_crowd_alert_time = 0
 
     def get_footprint(self, bbox):
@@ -52,6 +59,14 @@ class SpatialAnomalyEngine:
             if p1[1] < line_y <= p2[1]:
                 return True
         return False
+
+    def _is_vaulting(self, bbox, threshold_px=40):
+        """
+        Checks if the bottom footprint of the bounding box is elevated above ground level
+        during a portal crossing (indicating jumping/vaulting/stepping over).
+        """
+        _, _, _, y2 = bbox
+        return (self.ground_y_level - y2) > threshold_px
 
     def process_frame(self, tracks, camera_id="CAM_01", frame_number=None):
         """
@@ -77,20 +92,40 @@ class SpatialAnomalyEngine:
                 self.track_history[track_id].pop(0)
 
             # ----------------------------------------------------
-            # 1. TAILGATING DETECTION LOGIC
+            # 1. TAILGATING & PHYSICAL BARRIER VAULTING LOGIC
             # ----------------------------------------------------
             if len(self.track_history[track_id]) >= 2:
                 prev_pt = self.track_history[track_id][-2]
                 curr_pt = self.track_history[track_id][-1]
 
                 if self._has_crossed_portal(prev_pt, curr_pt):
+                    # Check for elevated footprint (Turnstile Vaulting / Jumping)
+                    if self._is_vaulting(bbox):
+                        event = IncidentEvent(
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            camera_id=camera_id,
+                            event_type="zone_intrusion",
+                            threat_score=0.98,
+                            person_id=f"P-{track_id}",
+                            bounding_box=list(map(int, bbox)),
+                            zone="turnstile_gate",
+                            explanation_signals=[
+                                "turnstile_vaulting_detected",
+                                "elevated_footprint_crossing",
+                                "physical_barrier_bypass"
+                            ],
+                            model_version="c1_spatial_v1.0",
+                            frame_number=frame_number
+                        )
+                        alerts.append(event.to_dict())
+
+                    # Check for temporal slipstream breach (Tailgating)
                     if self.last_entry_time is not None:
                         delta_t = current_time - self.last_entry_time
                         if delta_t < self.tailgating_time_threshold and track_id != self.last_leader_id:
                             self.flagged_tailgaters.add(track_id)
                             leader_id_val = int(self.last_leader_id) if self.last_leader_id is not None else -1
                             
-                            # Construct shared IncidentEvent for tailgating
                             event = IncidentEvent(
                                 timestamp=datetime.now(timezone.utc).isoformat(),
                                 camera_id=camera_id,
@@ -116,15 +151,15 @@ class SpatialAnomalyEngine:
                         self.last_entry_time = current_time
 
             # ----------------------------------------------------
-            # 2. RESTRICTED ZONE INTRUSION LOGIC (Point-in-Polygon)
+            # 2. RESTRICTED ZONE & BARRIER STRUCTURE INTRUSION
             # ----------------------------------------------------
+            # Point-in-polygon check for off-limits floor zone
             if self.restricted_polygon is not None:
                 dist = cv2.pointPolygonTest(self.restricted_polygon, foot_pt, False)
                 if dist >= 0:
                     if track_id not in self.active_intrusions:
                         self.active_intrusions.add(track_id)
                         
-                        # Construct shared IncidentEvent for zone intrusion
                         event = IncidentEvent(
                             timestamp=datetime.now(timezone.utc).isoformat(),
                             camera_id=camera_id,
@@ -144,6 +179,32 @@ class SpatialAnomalyEngine:
                 else:
                     self.active_intrusions.discard(track_id)
 
+            # Point-in-polygon check for physical turnstile hardware cabinet
+            if self.turnstile_barrier_polygon is not None:
+                dist_barrier = cv2.pointPolygonTest(self.turnstile_barrier_polygon, foot_pt, False)
+                if dist_barrier >= 0:
+                    if track_id not in self.active_barrier_breaches:
+                        self.active_barrier_breaches.add(track_id)
+
+                        event = IncidentEvent(
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            camera_id=camera_id,
+                            event_type="zone_intrusion",
+                            threat_score=0.96,
+                            person_id=f"P-{track_id}",
+                            bounding_box=list(map(int, bbox)),
+                            zone="turnstile_hardware_cabinet",
+                            explanation_signals=[
+                                "barrier_structure_intrusion",
+                                "physical_gate_climbing"
+                            ],
+                            model_version="c1_spatial_v1.0",
+                            frame_number=frame_number
+                        )
+                        alerts.append(event.to_dict())
+                else:
+                    self.active_barrier_breaches.discard(track_id)
+
         # ----------------------------------------------------
         # 3. SUDDEN CROWDING DENSITY LOGIC
         # ----------------------------------------------------
@@ -152,10 +213,8 @@ class SpatialAnomalyEngine:
             if current_time - self.last_crowd_alert_time > 5.0:
                 self.last_crowd_alert_time = current_time
                 
-                # Bounding box of the primary cluster (use first track box as anchor)
                 anchor_bbox = list(map(int, tracks[0][1])) if tracks else None
                 
-                # Construct shared IncidentEvent for crowding
                 event = IncidentEvent(
                     timestamp=datetime.now(timezone.utc).isoformat(),
                     camera_id=camera_id,
