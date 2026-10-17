@@ -75,3 +75,5 @@ runs/
 # ---- COMPILED DOCS ----
 docs/**/*.pdf
 !docs/proposal/*.pdf
+
+.venv311/
