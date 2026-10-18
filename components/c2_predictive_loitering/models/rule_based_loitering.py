@@ -23,6 +23,7 @@ WORK_ROOT = Path(
 ALERT_THRESHOLD = 0.65
 WATCH_THRESHOLD = 0.40
 MINIMUM_TRACK_QUALITY = 0.30
+MODEL_VERSION = "c2_rule_baseline_v1.1"
 
 
 def parse_arguments():
@@ -36,7 +37,10 @@ def parse_arguments():
     parser.add_argument(
         "--video-id",
         default="12",
-        help="Video ID used by the trajectory-summary CSV.",
+        help=(
+            "Video ID used by the "
+            "trajectory-summary CSV."
+        ),
     )
 
     return parser.parse_args()
@@ -51,6 +55,27 @@ def clip_score(value):
             0.0,
             1.0,
         )
+    )
+
+
+def value_is_true(value):
+    """Safely convert CSV Boolean values."""
+
+    if isinstance(
+        value,
+        (bool, np.bool_),
+    ):
+        return bool(value)
+
+    return (
+        str(value)
+        .strip()
+        .lower()
+        in {
+            "true",
+            "1",
+            "yes",
+        }
     )
 
 
@@ -81,9 +106,9 @@ def calculate_risk(row):
         row["track_quality"]
     )
 
-    eligible = str(
+    eligible = value_is_true(
         row["eligible_for_analysis"]
-    ).strip().lower() == "true"
+    )
 
     duration_for_rate = max(
         dwell_time,
@@ -118,6 +143,8 @@ def calculate_risk(row):
         - path_efficiency
     )
 
+    # The feature script now calculates direction changes
+    # from smoothed and sampled trajectory coordinates.
     direction_score = clip_score(
         direction_change_rate
         / 3.0
@@ -237,6 +264,78 @@ def calculate_risk(row):
     }
 
 
+def create_assessment(row, analysis):
+    """Create a privacy-preserving track-assessment record."""
+
+    return {
+        "record_type": (
+            "track_assessment"
+        ),
+        "camera_id": (
+            f"atma_video_{row['video_id']}"
+        ),
+        "person_id": (
+            f"P-{int(row['track_id']):04d}"
+        ),
+        "source_video_id": str(
+            row["video_id"]
+        ),
+        "first_frame": int(
+            row["first_frame"]
+        ),
+        "last_frame": int(
+            row["last_frame"]
+        ),
+        "dwell_time_seconds": round(
+            float(row["dwell_time"]),
+            4,
+        ),
+        "behaviour_state": (
+            analysis[
+                "behaviour_state"
+            ]
+        ),
+        "risk_score": (
+            analysis[
+                "risk_score"
+            ]
+        ),
+        "uncertainty": (
+            analysis[
+                "uncertainty"
+            ]
+        ),
+        "track_quality": round(
+            float(
+                row["track_quality"]
+            ),
+            4,
+        ),
+        "alert_generated": (
+            analysis[
+                "alert_generated"
+            ]
+        ),
+        "explanation_signals": (
+            analysis[
+                "explanation_signals"
+            ]
+        ),
+        "model_version": (
+            MODEL_VERSION
+        ),
+        "requires_operator_review": (
+            analysis[
+                "alert_generated"
+            ]
+        ),
+        "privacy_note": (
+            "Anonymous tracking ID; "
+            "no facial identification."
+        ),
+    }
+
+
 def main():
     arguments = parse_arguments()
 
@@ -264,7 +363,15 @@ def main():
         )
     )
 
-    output_json = (
+    assessment_json = (
+        output_directory
+        / (
+            f"{arguments.video_id}"
+            "_track_assessments.json"
+        )
+    )
+
+    event_json = (
         output_directory
         / (
             f"{arguments.video_id}"
@@ -287,7 +394,38 @@ def main():
         input_csv
     )
 
+    required_columns = {
+        "video_id",
+        "track_id",
+        "first_frame",
+        "last_frame",
+        "dwell_time",
+        "pause_ratio",
+        "maximum_displacement",
+        "path_efficiency",
+        "direction_changes",
+        "track_quality",
+        "eligible_for_analysis",
+    }
+
+    missing_columns = (
+        required_columns
+        - set(summary.columns)
+    )
+
+    if missing_columns:
+        raise ValueError(
+            "Missing required columns: "
+            f"{sorted(missing_columns)}"
+        )
+
+    if summary.empty:
+        raise ValueError(
+            "The trajectory-summary CSV is empty."
+        )
+
     results = []
+    json_assessments = []
     json_events = []
 
     for row in summary.to_dict(
@@ -305,62 +443,44 @@ def main():
                     "explanation_signals"
                 ]
             ),
+            "model_version": (
+                MODEL_VERSION
+            ),
         }
 
-        results.append(result)
+        results.append(
+            result
+        )
 
-        json_events.append(
-            {
-                "camera_id": (
-                    f"atma_video_"
-                    f"{row['video_id']}"
-                ),
-                "person_id": (
-                    f"P-{int(row['track_id']):04d}"
+        assessment = create_assessment(
+            row,
+            analysis,
+        )
+
+        json_assessments.append(
+            assessment
+        )
+
+        # Only confirmed alert records are written to the
+        # event file. Monitor and normal assessments remain
+        # in the separate assessment file.
+        if analysis["alert_generated"]:
+            event = {
+                **assessment,
+                "record_type": (
+                    "alert_event"
                 ),
                 "event_type": (
                     "potential_loitering"
                 ),
-                "behaviour_state": (
-                    analysis[
-                        "behaviour_state"
-                    ]
-                ),
-                "risk_score": (
-                    analysis[
-                        "risk_score"
-                    ]
-                ),
-                "uncertainty": (
-                    analysis[
-                        "uncertainty"
-                    ]
-                ),
-                "track_quality": round(
-                    float(
-                        row["track_quality"]
-                    ),
-                    4,
-                ),
-                "alert_generated": (
-                    analysis[
-                        "alert_generated"
-                    ]
-                ),
-                "explanation_signals": (
-                    analysis[
-                        "explanation_signals"
-                    ]
-                ),
-                "model_version": (
-                    "c2_rule_baseline_v1.0"
-                ),
-                "privacy_note": (
-                    "Anonymous tracking ID; "
-                    "no facial identification."
+                "requires_operator_review": (
+                    True
                 ),
             }
-        )
+
+            json_events.append(
+                event
+            )
 
     results_dataframe = pd.DataFrame(
         results
@@ -378,7 +498,17 @@ def main():
         index=False,
     )
 
-    with output_json.open(
+    with assessment_json.open(
+        "w",
+        encoding="utf-8",
+    ) as json_stream:
+        json.dump(
+            json_assessments,
+            json_stream,
+            indent=2,
+        )
+
+    with event_json.open(
         "w",
         encoding="utf-8",
     ) as json_stream:
@@ -404,8 +534,12 @@ def main():
     )
 
     print()
-    print("Loitering baseline completed")
-    print("----------------------------")
+    print(
+        "Loitering baseline completed"
+    )
+    print(
+        "----------------------------"
+    )
     print(
         f"Tracks analysed: "
         f"{len(results_dataframe)}"
@@ -423,8 +557,12 @@ def main():
         f"{output_csv}"
     )
     print(
-        f"Event JSON: "
-        f"{output_json}"
+        f"Assessment JSON: "
+        f"{assessment_json}"
+    )
+    print(
+        f"Alert-event JSON: "
+        f"{event_json}"
     )
 
 

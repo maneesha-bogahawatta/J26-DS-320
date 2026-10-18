@@ -20,6 +20,15 @@ PAUSE_SPEED_THRESHOLD = 0.02
 DIRECTION_CHANGE_THRESHOLD = 45.0
 MINIMUM_OBSERVATIONS = 10
 
+# Reduces detector-coordinate jitter before movement analysis.
+SMOOTHING_WINDOW = 7
+
+# Direction is measured over wider intervals instead of every frame.
+DIRECTION_SAMPLE_INTERVAL = 10
+
+# Ignore very small movements when calculating direction changes.
+MIN_DIRECTION_DISPLACEMENT = 0.01
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -38,7 +47,9 @@ def parse_arguments():
 def angle_difference(first_angle, second_angle):
     """Return the smallest difference between two angles."""
 
-    difference = abs(first_angle - second_angle)
+    difference = abs(
+        first_angle - second_angle
+    )
 
     return min(
         difference,
@@ -49,16 +60,42 @@ def angle_difference(first_angle, second_angle):
 def calculate_track_features(track):
     """Calculate features for one ByteTrack trajectory."""
 
-    track = track.sort_values(
-        "frame_number"
-    ).copy()
+    track = (
+        track.sort_values(
+            "frame_number"
+        )
+        .reset_index(drop=True)
+        .copy()
+    )
+
+    # Smooth the coordinates to reduce frame-to-frame
+    # movement caused by detector bounding-box jitter.
+    track["smoothed_centre_x"] = (
+        track["centre_x"]
+        .rolling(
+            window=SMOOTHING_WINDOW,
+            center=True,
+            min_periods=1,
+        )
+        .mean()
+    )
+
+    track["smoothed_centre_y"] = (
+        track["centre_y"]
+        .rolling(
+            window=SMOOTHING_WINDOW,
+            center=True,
+            min_periods=1,
+        )
+        .mean()
+    )
 
     track["delta_x"] = (
-        track["centre_x"].diff()
+        track["smoothed_centre_x"].diff()
     )
 
     track["delta_y"] = (
-        track["centre_y"].diff()
+        track["smoothed_centre_y"].diff()
     )
 
     track["delta_time"] = (
@@ -99,18 +136,85 @@ def calculate_track_features(track):
         <= PAUSE_SPEED_THRESHOLD
     )
 
-    directions = np.degrees(
+    # Sample the trajectory at wider intervals. This avoids
+    # interpreting tiny frame-to-frame coordinate changes as
+    # deliberate human direction changes.
+    sampled_track = track.iloc[
+        ::DIRECTION_SAMPLE_INTERVAL
+    ].copy()
+
+    if (
+        not sampled_track.empty
+        and sampled_track.index[-1]
+        != track.index[-1]
+    ):
+        sampled_track = pd.concat(
+            [
+                sampled_track,
+                track.iloc[[-1]],
+            ],
+            ignore_index=True,
+        )
+
+    sampled_track[
+        "direction_delta_x"
+    ] = (
+        sampled_track[
+            "smoothed_centre_x"
+        ].diff()
+    )
+
+    sampled_track[
+        "direction_delta_y"
+    ] = (
+        sampled_track[
+            "smoothed_centre_y"
+        ].diff()
+    )
+
+    sampled_track[
+        "direction_distance"
+    ] = np.sqrt(
+        sampled_track[
+            "direction_delta_x"
+        ] ** 2
+        + sampled_track[
+            "direction_delta_y"
+        ] ** 2
+    )
+
+    meaningful_movements = (
+        sampled_track[
+            sampled_track[
+                "direction_distance"
+            ]
+            >= MIN_DIRECTION_DISPLACEMENT
+        ]
+        .copy()
+    )
+
+    meaningful_movements[
+        "direction"
+    ] = np.degrees(
         np.arctan2(
-            track["delta_y"],
-            track["delta_x"],
+            meaningful_movements[
+                "direction_delta_y"
+            ],
+            meaningful_movements[
+                "direction_delta_x"
+            ],
         )
     )
 
-    direction_changes = 0
-
     valid_directions = (
-        directions.dropna().tolist()
+        meaningful_movements[
+            "direction"
+        ]
+        .dropna()
+        .tolist()
     )
+
+    direction_changes = 0
 
     for index in range(
         1,
@@ -132,12 +236,20 @@ def calculate_track_features(track):
 
     direct_displacement = math.dist(
         (
-            first_row["centre_x"],
-            first_row["centre_y"],
+            first_row[
+                "smoothed_centre_x"
+            ],
+            first_row[
+                "smoothed_centre_y"
+            ],
         ),
         (
-            last_row["centre_x"],
-            last_row["centre_y"],
+            last_row[
+                "smoothed_centre_x"
+            ],
+            last_row[
+                "smoothed_centre_y"
+            ],
         ),
     )
 
@@ -169,7 +281,10 @@ def calculate_track_features(track):
 
     coverage_ratio = min(
         observation_count
-        / max(expected_observations, 1),
+        / max(
+            expected_observations,
+            1,
+        ),
         1.0,
     )
 
@@ -196,20 +311,28 @@ def calculate_track_features(track):
 
     if observation_count > 1:
         origin_x = float(
-            first_row["centre_x"]
+            first_row[
+                "smoothed_centre_x"
+            ]
         )
 
         origin_y = float(
-            first_row["centre_y"]
+            first_row[
+                "smoothed_centre_y"
+            ]
         )
 
         displacement_from_origin = np.sqrt(
             (
-                track["centre_x"]
+                track[
+                    "smoothed_centre_x"
+                ]
                 - origin_x
             ) ** 2
             + (
-                track["centre_y"]
+                track[
+                    "smoothed_centre_y"
+                ]
                 - origin_y
             ) ** 2
         )
@@ -246,7 +369,9 @@ def calculate_track_features(track):
         ),
         "first_frame": first_frame,
         "last_frame": last_frame,
-        "observation_count": observation_count,
+        "observation_count": (
+            observation_count
+        ),
         "expected_observations": (
             expected_observations
         ),
@@ -258,11 +383,15 @@ def calculate_track_features(track):
             4,
         ),
         "mean_speed": round(
-            float(track["speed"].mean()),
+            float(
+                track["speed"].mean()
+            ),
             6,
         ),
         "maximum_speed": round(
-            float(track["speed"].max()),
+            float(
+                track["speed"].max()
+            ),
             6,
         ),
         "maximum_displacement": round(
@@ -300,6 +429,12 @@ def calculate_track_features(track):
         ),
         "eligible_for_analysis": (
             eligible_for_analysis
+        ),
+        "smoothing_window": (
+            SMOOTHING_WINDOW
+        ),
+        "direction_sample_interval": (
+            DIRECTION_SAMPLE_INTERVAL
         ),
     }
 
@@ -377,6 +512,11 @@ def main():
             f"{sorted(missing_columns)}"
         )
 
+    if trajectories.empty:
+        raise ValueError(
+            "The input trajectory CSV is empty."
+        )
+
     frame_features = []
     summary_rows = []
 
@@ -388,10 +528,7 @@ def main():
         sort=True,
     )
 
-    for (
-        _,
-        track,
-    ) in grouped_tracks:
+    for _, track in grouped_tracks:
         enhanced_track, summary = (
             calculate_track_features(
                 track
@@ -406,13 +543,10 @@ def main():
             summary
         )
 
-    if frame_features:
-        all_frame_features = pd.concat(
-            frame_features,
-            ignore_index=True,
-        )
-    else:
-        all_frame_features = pd.DataFrame()
+    all_frame_features = pd.concat(
+        frame_features,
+        ignore_index=True,
+    )
 
     summary_dataframe = pd.DataFrame(
         summary_rows
@@ -435,8 +569,12 @@ def main():
     )
 
     print()
-    print("ATMA-V feature calculation completed")
-    print("------------------------------------")
+    print(
+        "ATMA-V feature calculation completed"
+    )
+    print(
+        "------------------------------------"
+    )
     print(
         f"Input trajectory rows: "
         f"{len(trajectories)}"
@@ -452,6 +590,14 @@ def main():
     print(
         f"Rejected/uncertain tracks: "
         f"{len(summary_dataframe) - eligible_count}"
+    )
+    print(
+        f"Smoothing window: "
+        f"{SMOOTHING_WINDOW} observations"
+    )
+    print(
+        f"Direction sample interval: "
+        f"{DIRECTION_SAMPLE_INTERVAL} observations"
     )
     print(
         f"Frame features: "
