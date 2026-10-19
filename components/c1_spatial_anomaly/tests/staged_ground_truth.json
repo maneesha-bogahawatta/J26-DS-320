@@ -1,0 +1,56 @@
+{
+  "tailgating/T_001.mp4": {
+    "expected_events": [
+      {
+        "event_type": "tailgating",
+        "frame_start": 80,
+        "frame_end": 220
+      }
+    ]
+  },
+  "tailgating/T_002.mp4": {
+    "expected_events": [
+      {
+        "event_type": "tailgating",
+        "frame_start": 60,
+        "frame_end": 200
+      }
+    ]
+  },
+  "tailgating/T_003.mp4": {
+    "expected_events": [
+      {
+        "event_type": "tailgating",
+        "frame_start": 250,
+        "frame_end": 420
+      }
+    ]
+  },
+  "tailgating/T_004.mp4": {
+    "expected_events": [
+      {
+        "event_type": "zone_intrusion",
+        "frame_start": 1,
+        "frame_end": 120
+      }
+    ]
+  },
+  "tailgating/T_005.mp4": {
+    "expected_events": [
+      {
+        "event_type": "tailgating",
+        "frame_start": 30,
+        "frame_end": 250
+      }
+    ]
+  },
+  "intrusion/I_001.mp4": {
+    "expected_events": [
+      {
+        "event_type": "zone_intrusion",
+        "frame_start": 20,
+        "frame_end": 220
+      }
+    ]
+  }
+}
