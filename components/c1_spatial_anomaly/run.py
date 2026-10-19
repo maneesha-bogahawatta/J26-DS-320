@@ -1,138 +1,161 @@
-import argparse
-import glob
-import json
 import os
+import sys
+import argparse
 import cv2
 import numpy as np
+from pathlib import Path
 from ultralytics import YOLO
+
+# Resolve paths
+COMPONENT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = COMPONENT_ROOT.parent.parent
+if str(COMPONENT_ROOT) not in sys.path:
+    sys.path.insert(0, str(COMPONENT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.spatial_logic import SpatialAnomalyEngine
 
-class FrameReader:
-    """Helper class to abstract reading from both VideoCapture and Image Folders."""
-    def __init__(self, source):
-        self.is_image_folder = os.path.isdir(source)
-        if self.is_image_folder:
-            # Find and sort all image files inside directory
-            patterns = ["*.jpg", "*.jpeg", "*.png", "*.bmp"]
-            self.image_files = []
-            for pattern in patterns:
-                self.image_files.extend(glob.glob(os.path.join(source, pattern)))
-            self.image_files = sorted(self.image_files)
-            self.idx = 0
-            self.cap = None
-            if not self.image_files:
-                raise ValueError(f"No image files found in folder: {source}")
-            # Determine dimensions from first image
-            sample = cv2.imread(self.image_files[0])
-            self.height, self.width = sample.shape[:2]
-        else:
-            if source.isdigit():
-                self.cap = cv2.VideoCapture(int(source), cv2.CAP_DSHOW)
-            else:
-                self.cap = cv2.VideoCapture(source)
-            if not self.cap.isOpened():
-                raise ValueError(f"Could not open video source: {source}")
-            self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+# Calibrated geometry lines per video canvas resolution
+CLIP_CONFIGS = {
+    "T_001.mp4": {
+        "portal_line": ((250, 300), (550, 440)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 0.1,
+        "crowd_density_limit": 6
+    },
+    "T_002.mp4": {
+        "portal_line": ((100, 480), (950, 480)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 6
+    },
+    "T_003.mp4": {
+        "portal_line": ((150, 420), (900, 420)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 12
+    },
+    "T_004.mp4": {
+        "portal_line": ((20, 500), (550, 500)),
+        "restricted_polygon": None,
+        "turnstile_barrier_polygon": [[50, 300], [520, 300], [520, 620], [50, 620]],
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 6
+    },
+    "T_005.mp4": {
+        # Door floor threshold for 720x1280 vertical resolution
+        "portal_line": ((100, 800), (650, 800)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 3.0,          # 3.0s window for exit button press & door swing
+        "crowd_density_limit": 6
+    },
+    "I_001.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": [[20, 100], [550, 100], [550, 950], [20, 950]],
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 6
+    }
+}
 
-    def read(self):
-        if self.is_image_folder:
-            if self.idx >= len(self.image_files):
-                return False, None
-            frame = cv2.imread(self.image_files[self.idx])
-            self.idx += 1
-            return (frame is not None), frame
-        else:
-            return self.cap.read()
+DEFAULT_CONFIG = {
+    "portal_line": ((200, 450), (900, 450)),
+    "restricted_polygon": None,
+    "tailgating_time_threshold": 1.5,
+    "crowd_density_limit": 6
+}
 
-    def release(self):
-        if self.cap is not None:
-            self.cap.release()
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Component 1: Spatial Anomaly Detection")
-    parser.add_argument("--source", type=str, required=True, help="Video file path, camera index, or folder of images")
-    parser.add_argument("--config", type=str, default="components/c1_spatial_anomaly/configs/doorway_config.json")
+    parser = argparse.ArgumentParser(description="Run Spatial Anomaly Detection Engine")
+    parser.add_argument("--source", type=str, required=True, help="Path to input video file or stream")
     args = parser.parse_args()
 
-    # Load configuration
-    with open(args.config, "r") as f:
-        cfg = json.load(f)
-
-    portal_line = tuple(tuple(pt) for pt in cfg["portal_threshold_line"])
-    restricted_poly = cfg.get("restricted_zone_polygon", None)
-
-    # Initialize Engine
-    engine = SpatialAnomalyEngine(
-        portal_line=portal_line,
-        restricted_polygon=restricted_poly,
-        tailgating_time_threshold=cfg.get("tailgating_time_threshold_sec", 1.0),
-        crowd_density_limit=cfg.get("crowd_density_limit", 4)
-    )
-
-    model = YOLO("yolov8n.pt")
-
-    try:
-        reader = FrameReader(args.source)
-    except Exception as e:
-        print(f"[ERROR] {e}")
+    video_path = args.source
+    if not os.path.exists(video_path):
+        print(f"[ERROR] Source video not found: {video_path}")
         return
 
-    print(f"[C1] Successfully opened stream from '{args.source}' ({reader.width}x{reader.height})")
+    video_filename = os.path.basename(video_path)
+    cfg = CLIP_CONFIGS.get(video_filename, DEFAULT_CONFIG)
 
-    while True:
-        ret, frame = reader.read()
+    cap = cv2.VideoCapture(video_path)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    if fps <= 0 or np.isnan(fps):
+        fps = 30.0
+
+    print(f"[C1] Opened '{video_filename}' ({width}x{height} @ {fps:.1f} FPS)")
+
+    model = YOLO("yolov8n.pt")
+    engine = SpatialAnomalyEngine(
+        portal_line=cfg["portal_line"],
+        restricted_polygon=cfg.get("restricted_polygon"),
+        turnstile_barrier_polygon=cfg.get("turnstile_barrier_polygon"),
+        tailgating_time_threshold=cfg["tailgating_time_threshold"],
+        crowd_density_limit=cfg["crowd_density_limit"],
+        fps=fps
+    )
+
+    frame_count = 0
+    window_name = f"Component 1 - Spatial Anomaly Engine [{video_filename}]"
+
+    while cap.isOpened():
+        ret, frame = cap.read()
         if not ret:
-            print("[C1] Finished reading frames from source.")
             break
 
-        # Run ByteTrack for human class 0
+        frame_count += 1
+
         results = model.track(frame, persist=True, tracker="bytetrack.yaml", classes=[0], verbose=False)
+
         tracks = []
         if results[0].boxes.id is not None:
             boxes = results[0].boxes.xyxy.cpu().numpy()
             ids = results[0].boxes.id.int().cpu().numpy()
             tracks = list(zip(ids, boxes))
 
-        # Process spatial alerts
-        alerts = engine.process_frame(tracks, camera_id=cfg["camera_id"])
-        for alert in alerts:
-            print(f"[C1 ALERT {alert['event_type']}] {alert['evidence']['explanation']}")
+        alerts = engine.process_frame(tracks, camera_id=video_filename, frame_number=frame_count)
 
-        # 1. Draw Doorway Portal Line (Cyan)
-        cv2.line(frame, portal_line[0], portal_line[1], (255, 255, 0), 2)
-        cv2.putText(frame, "PORTAL LINE", (portal_line[0][0], portal_line[0][1] - 8),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+        # 1. Render Portal Line
+        p1, p2 = cfg["portal_line"]
+        if p1 != (0, 0) or p2 != (0, 0):
+            cv2.line(frame, p1, p2, (255, 255, 0), 2)
+            cv2.putText(frame, "PORTAL THRESHOLD", (p1[0], p1[1] - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
-        # 2. Draw Restricted Zone Polygon (Orange)
-        if restricted_poly:
-            pts = np.array(restricted_poly, np.int32).reshape((-1, 1, 2))
-            cv2.polylines(frame, [pts], isClosed=True, color=(0, 165, 255), thickness=2)
-            cv2.putText(frame, "RESTRICTED ZONE", (restricted_poly[0][0], restricted_poly[0][1] - 8),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
-
-        # 3. Draw Pedestrian Bounding Boxes and IDs
+        # 2. Render Pedestrian Footprints & Bounding Boxes
+        flagged_ids = engine.flagged_tailgaters.union(engine.active_intrusions)
         for track_id, bbox in tracks:
             x1, y1, x2, y2 = map(int, bbox)
-            if track_id in engine.flagged_tailgaters or track_id in engine.active_intrusions:
-                color = (0, 0, 255)
-                label = f"ID:{track_id} [FLAGGED BREACH]"
-            elif track_id == engine.last_leader_id:
-                color = (0, 255, 0)
-                label = f"ID:{track_id} [LEADER]"
-            else:
-                color = (255, 255, 255)
-                label = f"ID:{track_id}"
-
+            foot_x, foot_y = int((x1 + x2) / 2), int(y2)
+            color = (0, 0, 255) if track_id in flagged_ids else (0, 255, 0)
+            
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            cv2.circle(frame, (foot_x, foot_y), 5, (0, 255, 255), -1)
+            cv2.putText(frame, f"ID:{track_id} ({foot_x},{foot_y})", (x1, max(y1 - 10, 15)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        cv2.imshow("C1 - Spatial Anomaly Evaluator", frame)
-        if cv2.waitKey(20) & 0xFF == ord('q'):
+        # 3. Print Console Alerts & Render GUI HUD
+        if alerts:
+            for alert in alerts:
+                signals_str = ", ".join(alert.get("explanation_signals", []))
+                person_str = alert.get("person_id", "P-UNKNOWN")
+                print(f"[C1 ALERT {alert['event_type'].upper()}] {person_str} -> {signals_str}")
+
+            cv2.putText(frame, f"ANOMALY: {alerts[0]['event_type'].upper()}", 
+                        (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+        cv2.imshow(window_name, frame)
+
+        if cv2.waitKey(30) & 0xFF in (ord('q'), 27):
             break
 
-    reader.release()
+    cap.release()
     cv2.destroyAllWindows()
+    print("[C1] Video playback completed.")
+
 
 if __name__ == "__main__":
     main()
