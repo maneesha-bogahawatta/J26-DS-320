@@ -15,7 +15,8 @@
     "clip": "LeftBag",
     "T": 3.0,
     "expected_alert": 43.0,
-    "detector_alert": 44.6,
+    "borderline": false,
+    "detector_alert": 43.4,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 37.4,
@@ -25,6 +26,7 @@
     "clip": "LeftBag_AtChair",
     "T": 3.0,
     "expected_alert": 25.0,
+    "borderline": false,
     "detector_alert": 24.6,
     "other_alerts": 0,
     "detector_found_object": true,
@@ -35,6 +37,7 @@
     "clip": "LeftBag_BehindChair",
     "T": 3.0,
     "expected_alert": 25.0,
+    "borderline": false,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": false,
@@ -45,17 +48,19 @@
     "clip": "LeftBag_PickedUp",
     "T": 3.0,
     "expected_alert": null,
-    "detector_alert": null,
+    "borderline": true,
+    "detector_alert": 36.0,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 18.6,
-    "outcome": "TN"
+    "outcome": "BORDERLINE"
    },
    {
     "clip": "LeftBox",
     "T": 3.0,
     "expected_alert": 32.0,
-    "detector_alert": 33.0,
+    "borderline": false,
+    "detector_alert": 33.2,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 22.0,
@@ -67,7 +72,8 @@
     "clip": "LeftBag",
     "T": 5.0,
     "expected_alert": 45.0,
-    "detector_alert": 46.6,
+    "borderline": false,
+    "detector_alert": 45.4,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 37.4,
@@ -77,6 +83,7 @@
     "clip": "LeftBag_AtChair",
     "T": 5.0,
     "expected_alert": 27.0,
+    "borderline": false,
     "detector_alert": 26.6,
     "other_alerts": 0,
     "detector_found_object": true,
@@ -87,6 +94,7 @@
     "clip": "LeftBag_BehindChair",
     "T": 5.0,
     "expected_alert": 27.0,
+    "borderline": false,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": false,
@@ -97,21 +105,23 @@
     "clip": "LeftBag_PickedUp",
     "T": 5.0,
     "expected_alert": null,
+    "borderline": true,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 18.6,
-    "outcome": "TN"
+    "outcome": "BORDERLINE"
    },
    {
     "clip": "LeftBox",
     "T": 5.0,
     "expected_alert": null,
+    "borderline": true,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 22.0,
-    "outcome": "TN"
+    "outcome": "BORDERLINE"
    }
   ],
   "10.0": [
@@ -119,7 +129,8 @@
     "clip": "LeftBag",
     "T": 10.0,
     "expected_alert": 50.0,
-    "detector_alert": 51.6,
+    "borderline": false,
+    "detector_alert": 50.4,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 37.4,
@@ -129,16 +140,18 @@
     "clip": "LeftBag_AtChair",
     "T": 10.0,
     "expected_alert": 32.0,
-    "detector_alert": null,
+    "borderline": false,
+    "detector_alert": 31.6,
     "other_alerts": 0,
     "detector_found_object": true,
     "t_static": 18.6,
-    "outcome": "FN"
+    "outcome": "TP"
    },
    {
     "clip": "LeftBag_BehindChair",
     "T": 10.0,
     "expected_alert": 32.0,
+    "borderline": false,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": false,
@@ -149,6 +162,7 @@
     "clip": "LeftBag_PickedUp",
     "T": 10.0,
     "expected_alert": null,
+    "borderline": false,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": true,
@@ -159,6 +173,7 @@
     "clip": "LeftBox",
     "T": 10.0,
     "expected_alert": null,
+    "borderline": false,
     "detector_alert": null,
     "other_alerts": 0,
     "detector_found_object": true,
@@ -172,22 +187,25 @@
    "TP": 3,
    "FP": 0,
    "FN": 1,
-   "TN": 1,
-   "mean_latency_after_owner_gone": 3.7
+   "TN": 0,
+   "BORDERLINE": 1,
+   "mean_latency_after_owner_gone": 3.4
   },
   "5.0": {
    "TP": 2,
    "FP": 0,
    "FN": 1,
-   "TN": 2,
-   "mean_latency_after_owner_gone": 5.6
+   "TN": 0,
+   "BORDERLINE": 2,
+   "mean_latency_after_owner_gone": 5.0
   },
   "10.0": {
-   "TP": 1,
+   "TP": 2,
    "FP": 0,
-   "FN": 2,
+   "FN": 1,
    "TN": 2,
-   "mean_latency_after_owner_gone": 11.6
+   "BORDERLINE": 0,
+   "mean_latency_after_owner_gone": 10.0
   }
  }
 }

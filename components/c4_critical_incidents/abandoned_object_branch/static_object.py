@@ -114,7 +114,12 @@ def run(path, work_fps=5.0, width=384, crop=None, mask_rects=(), t_init=8.0,
             o['frames'] = o.get('frames', 0) + 1
             if any(np.hypot(p[0] - o['xy'][0], p[1] - o['xy'][1]) <= 12 for p in mov_c):
                 o['touch'] = o.get('touch', 0) + 1
-            if any(np.hypot(p[0] - o['xy'][0], p[1] - o['xy'][1]) <= R for p in persons):
+            near_now = any(np.hypot(p[0] - o['xy'][0], p[1] - o['xy'][1]) <= R for p in persons)
+            hist = o.setdefault('near_hist', [])
+            hist.append(near_now); del hist[:-3]
+            # debounce: a person counts as 'near' only if seen near in >= 2 of the last 3 frames,
+            # so a one-frame noise blob at the edge of the radius cannot reset the unattended timer
+            if sum(hist) >= 2:
                 o['last_person_t'] = t
             x, y, w, h = o['bbox']
             reg = d_bg[max(0, y - 1):y + h + 1, max(0, x - 1):x + w + 1]

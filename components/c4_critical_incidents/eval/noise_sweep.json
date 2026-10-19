@@ -1,0 +1,672 @@
+{
+ "LeftBag": {
+  "5.0": {
+   "0.0": [
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      45.4
+     ],
+     "other_alerts": 0
+    }
+   ]
+  },
+  "10.0": {
+   "0.0": [
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      50.4
+     ],
+     "other_alerts": 0
+    }
+   ]
+  }
+ },
+ "LeftBag_AtChair": {
+  "5.0": {
+   "0.0": [
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      26.6
+     ],
+     "other_alerts": 0
+    }
+   ]
+  },
+  "10.0": {
+   "0.0": [
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      31.6
+     ],
+     "other_alerts": 0
+    }
+   ]
+  }
+ },
+ "LeftBag_BehindChair": {
+  "5.0": {
+   "0.0": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ]
+  },
+  "10.0": {
+   "0.0": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    },
+    {
+     "alert": [],
+     "other_alerts": 0
+    }
+   ]
+  }
+ },
+ "LeftBag_PickedUp": {
+  "5.0": {
+   "0.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ]
+  },
+  "10.0": {
+   "0.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ]
+  }
+ },
+ "LeftBox": {
+  "5.0": {
+   "0.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ]
+  },
+  "10.0": {
+   "0.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "0.5": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "1.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ],
+   "2.0": [
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    },
+    {
+     "alert": [
+      null
+     ],
+     "other_alerts": 0
+    }
+   ]
+  }
+ }
+}
