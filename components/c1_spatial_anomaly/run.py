@@ -82,9 +82,9 @@ CLIP_CONFIGS = {
     # Adjusted restricted polygon to cover full 1218x720 room including door entrance
     "I_003.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
     "I_005.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
-    "C_001.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 5},
+    "C_001.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 4},
     "C_002.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 12},
-    "C_003.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 10},
+    "C_003.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 6},
     "C_004.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 8},
     "C_005.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 10},
     "C_006.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 10}
