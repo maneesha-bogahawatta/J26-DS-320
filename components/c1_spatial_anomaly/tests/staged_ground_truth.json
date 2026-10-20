@@ -53,6 +53,33 @@
       }
     ]
   },
+  "intrusion/I_002.mp4": {
+    "expected_events": [
+      {
+        "event_type": "zone_intrusion",
+        "frame_start": 25,
+        "frame_end": 140
+      }
+    ]
+  },
+  "intrusion/I_003.mp4": {
+    "expected_events": [
+      {
+        "event_type": "zone_intrusion",
+        "frame_start": 110,
+        "frame_end": 400
+      }
+    ]
+  },
+  "intrusion/I_005.mp4": {
+    "expected_events": [
+      {
+        "event_type": "zone_intrusion",
+        "frame_start": 1,
+        "frame_end": 450
+      }
+    ]
+  },
   "crowding/C_001.mp4": {
     "expected_events": [
       {

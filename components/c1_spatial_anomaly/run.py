@@ -18,7 +18,7 @@ from src.spatial_logic import SpatialAnomalyEngine
 
 class FastLiveTracker:
     """Lightweight real-time tracker for live CCTV streams."""
-    def __init__(self, max_lost=10, iou_threshold=0.10):
+    def __init__(self, max_lost=15, iou_threshold=0.10):
         self.next_id = 1
         self.tracks = {}
         self.max_lost = max_lost
@@ -78,6 +78,10 @@ CLIP_CONFIGS = {
     "T_004.mp4": {"portal_line": ((20, 500), (550, 500)), "turnstile_barrier_polygon": [[50, 300], [520, 300], [520, 620], [50, 620]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 6},
     "T_005.mp4": {"portal_line": ((100, 800), (650, 800)), "tailgating_time_threshold": 3.0, "crowd_density_limit": 6},
     "I_001.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[20, 100], [550, 100], [550, 950], [20, 950]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 6},
+    "I_002.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[200, 180], [480, 180], [480, 300], [200, 300]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.35},
+    # Adjusted restricted polygon to cover full 1218x720 room including door entrance
+    "I_003.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
+    "I_005.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
     "C_001.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 5},
     "C_002.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 12},
     "C_003.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 10},
@@ -116,9 +120,8 @@ def main():
 
     print(f"[C1 LIVE] Opened '{video_filename}' ({width}x{height} @ {fps:.1f} FPS)")
 
-    # Lightweight nano model for true 30+ FPS real-time processing
     model = YOLO("yolov8n.pt")
-    tracker = FastLiveTracker(max_lost=10, iou_threshold=0.10)
+    tracker = FastLiveTracker(max_lost=15, iou_threshold=0.10)
     
     engine = SpatialAnomalyEngine(
         portal_line=cfg["portal_line"],
@@ -134,6 +137,8 @@ def main():
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(window_name, 960, 540)
 
+    clip_conf = cfg.get("conf", 0.08)
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -141,11 +146,10 @@ def main():
 
         frame_count += 1
 
-        # Fast 640px inference with conf=0.08 to capture low-contrast sprinters at real-time speeds
         results = model.predict(
             frame, 
             classes=[0], 
-            conf=0.08, 
+            conf=clip_conf, 
             imgsz=640, 
             verbose=False
         )
@@ -162,7 +166,13 @@ def main():
         if p1 != (0, 0) or p2 != (0, 0):
             cv2.line(frame, p1, p2, (255, 255, 0), 2)
 
-        # 2. Render Bounding Boxes & IDs
+        # 2. Render Polygon if present
+        poly = cfg.get("restricted_polygon")
+        if poly:
+            pts = np.array(poly, np.int32).reshape((-1, 1, 2))
+            cv2.polylines(frame, [pts], isClosed=True, color=(0, 255, 255), thickness=2)
+
+        # 3. Render Bounding Boxes & IDs
         flagged_ids = engine.flagged_tailgaters.union(engine.active_intrusions)
         for track_id, bbox in tracks:
             x1, y1, x2, y2 = map(int, bbox)
@@ -174,7 +184,7 @@ def main():
             cv2.putText(frame, f"ID:{track_id}", (x1, max(y1 - 5, 15)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        # 3. Render HUD Banner
+        # 4. Render HUD Banner
         if alerts:
             for alert in alerts:
                 signals_str = ", ".join(alert.get("explanation_signals", []))

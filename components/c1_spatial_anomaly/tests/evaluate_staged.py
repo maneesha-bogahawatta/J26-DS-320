@@ -55,12 +55,29 @@ CLIP_CONFIGS = {
         "tailgating_time_threshold": 1.5,
         "crowd_density_limit": 6
     },
-    "I_002.mp4": {
+   "I_002.mp4": {
         "portal_line": ((0, 0), (0, 0)),
-        # Restricted polygon defining the internal cashier desk zone behind the counter
-        "restricted_polygon": [[0, 300], [1280, 300], [1280, 720], [0, 720]],
+        # Restricted polygon tightened strictly to the counter top barrier (x: 200..480, y: 180..300)
+        "restricted_polygon": [[200, 180], [480, 180], [480, 300], [200, 300]],
         "tailgating_time_threshold": 1.5,
-        "crowd_density_limit": 6
+        "crowd_density_limit": 15,
+        "conf": 0.35                       # Suppresses background noise & ghost detections on desk items
+    },
+    "I_003.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        # Restricted polygon covering the full floor and door landing zone (640x360)
+        "restricted_polygon": [[5, 30], [635, 30], [635, 355], [5, 355]],
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 15,
+        "conf": 0.05                       # Captures low-profile crawling, slipping, and falling postures
+    },
+    "I_005.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        # Restricted polygon covering the interior landing zone and room floor (640x360 resolution)
+        "restricted_polygon": [[30, 80], [610, 80], [610, 350], [30, 350]],
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 15,
+        "conf": 0.30                       # Prevents false detections on stationary office chair/boxes
     },
     # Crowding Dataset Clips
     "C_001.mp4": {
