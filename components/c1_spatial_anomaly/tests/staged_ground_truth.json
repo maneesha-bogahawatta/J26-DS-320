@@ -52,5 +52,59 @@
         "frame_end": 220
       }
     ]
+  },
+  "crowding/C_001.mp4": {
+    "expected_events": [
+      {
+        "event_type": "crowding",
+        "frame_start": 1,
+        "frame_end": 300
+      }
+    ]
+  },
+  "crowding/C_002.mp4": {
+    "expected_events": [
+      {
+        "event_type": "crowding",
+        "frame_start": 1,
+        "frame_end": 270
+      }
+    ]
+  },
+  "crowding/C_003.mp4": {
+    "expected_events": [
+      {
+        "event_type": "crowding",
+        "frame_start": 1,
+        "frame_end": 300
+      }
+    ]
+  },
+  "crowding/C_004.mp4": {
+    "expected_events": [
+      {
+        "event_type": "crowding",
+        "frame_start": 110,
+        "frame_end": 270
+      }
+    ]
+  },
+  "crowding/C_005.mp4": {
+    "expected_events": [
+      {
+        "event_type": "crowding",
+        "frame_start": 1,
+        "frame_end": 400
+      }
+    ]
+  },
+  "crowding/C_006.mp4": {
+    "expected_events": [
+      {
+        "event_type": "crowding",
+        "frame_start": 1,
+        "frame_end": 1000
+      }
+    ]
   }
 }

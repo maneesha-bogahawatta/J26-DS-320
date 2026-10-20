@@ -54,6 +54,50 @@ CLIP_CONFIGS = {
         "restricted_polygon": [[20, 100], [550, 100], [550, 950], [20, 950]],
         "tailgating_time_threshold": 1.5,
         "crowd_density_limit": 6
+    },
+    "I_002.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        # Restricted polygon defining the internal cashier desk zone behind the counter
+        "restricted_polygon": [[0, 300], [1280, 300], [1280, 720], [0, 720]],
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 6
+    },
+    # Crowding Dataset Clips
+    "C_001.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 6          # Lowered to 6 to catch rapid evacuation surges
+    },
+    "C_002.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 15
+    },
+    "C_003.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 10         # Threshold for dense escalator atrium footage
+    },
+    "C_004.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 8
+    },
+    "C_005.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 10
+    },
+    "C_006.mp4": {
+        "portal_line": ((0, 0), (0, 0)),
+        "restricted_polygon": None,
+        "tailgating_time_threshold": 1.5,
+        "crowd_density_limit": 10
     }
 }
 
@@ -118,8 +162,15 @@ def evaluate_staged_clips(base_raw_videos_dir, ground_truth_json):
                 break
             frame_num += 1
 
+            # Optimized for low-resolution and monitor-recorded CCTV clips
             results = model.track(
-                frame, persist=True, tracker="bytetrack.yaml", classes=[0], conf=0.4, verbose=False
+                frame, 
+                persist=True, 
+                tracker="bytetrack.yaml", 
+                classes=[0],        # Person class
+                conf=0.20,         # Catches low-contrast / blurry targets
+                imgsz=1280,        # High-res inference for distant / small bounding boxes
+                verbose=False
             )
 
             tracks = []
