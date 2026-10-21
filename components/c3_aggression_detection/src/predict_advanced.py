@@ -123,6 +123,11 @@ def score_cache(checkpoint, cache, step_s=.2, research_alerts=False, expected_so
     if cfg != ck['feature_contract']:
         raise ValueError('Pose cache preprocessing differs from checkpoint')
     model = build_model(ck['variant']).eval(); model.load_state_dict(ck['state'], strict=True)
+    return score_arrays(model, ck, arrays, meta, step_s, research_alerts)
+
+
+def score_arrays(model, ck, arrays, meta, step_s=.2, research_alerts=False):
+    """Shared causal replay; callers must separately authenticate cache/experiment provenance."""
     enabled = ck.get('research_alert_heads_enabled', [False, False])
     decision = CausalDecision([t if good else 1.000001 for t, good in zip(ck['thresholds'], enabled)])
     records = []; alerts = []; previous = -math.inf
@@ -195,26 +200,18 @@ def render(records, meta, output, pose_arrays=None):
             canvas[:h] = cv2.resize(frame, (w, h))
             t = index/fps; record = at_or_before(records, t)
             if pose_arrays is not None:
-                from c3_model import COCO_EDGES
                 pos = int(np.searchsorted(pose_arrays['t'], t+1e-8, side='right'))-1
                 if pos >= 0 and t-pose_arrays['t'][pos] < .2:
-                    begin, end = pose_arrays['frame_offsets'][pos:pos+2]
-                    for j in range(begin, end):
-                        joints = pose_arrays['keypoints'][j]
-                        visible = pose_arrays['observed'][j] | pose_arrays['imputed'][j]
-                        pixels = ((joints[:, :2]+.5)*np.array([w,h])).round().astype(int)
-                        for a,b in COCO_EDGES:
-                            if visible[a] and visible[b]: cv2.line(canvas, tuple(pixels[a]), tuple(pixels[b]), (100,210,80), 1, cv2.LINE_AA)
-                        for k in np.flatnonzero(visible):
-                            color = (50,210,80) if pose_arrays['observed'][j,k] else (30,170,255)
-                            cv2.circle(canvas, tuple(pixels[k]), 2, color, -1)
+                    from src.occlusion import draw_pose_evidence
+                    drawing=dict(pose_arrays,_source_width=width,_source_height=height)
+                    draw_pose_evidence(canvas,drawing,pos,w,h)
             status = record['status'] if record else 'WARMUP'
             pre = record['smoothed_onset_score'] if record else None
             fight = record['smoothed_fight_score'] if record else None
             values = 'No usable pose score' if pre is None else f'Weak onset <=3s: {pre:.3f} | Active fight: {fight:.3f}'
             color = (60,160,255) if 'ALERT' in status else (220,220,220)
             lines = [(f'Original time {t:.2f}s | {status}', color), (values, (220,220,220)),
-                     ('Research scores: weak supervision, uncalibrated', (80,210,240)),
+                     ('Green: observed | Orange hollow: estimated | Missing: not plotted', (80,210,240)),
                      ('Not validated early-aggression ground truth', (80,210,240))]
             for row, (text, col) in enumerate(lines):
                 cv2.putText(canvas, text, (8, h+22+row*27), cv2.FONT_HERSHEY_SIMPLEX, .49, col, 1, cv2.LINE_AA)

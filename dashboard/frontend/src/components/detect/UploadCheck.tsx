@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { IncidentEvent } from '../../types/events';
 import { C3_ENABLED } from '../../api';
 import type { VideoCheckReport } from '../../detect/engine';
-import { emptyVideoSummary } from '../../detect/recordedVideo';
+import { c3Found, emptyVideoSummary } from '../../detect/recordedVideo';
 import { c3ExportUrl, c3MediaUrl } from '../../api/c3Client';
 import { detector, Cancelled } from '../../detect';
 import type { AnalyzeProgress, Found } from '../../detect';
@@ -30,6 +30,9 @@ import type { StageBox } from './DetectStage';
 import { FoundSummary } from './FoundSummary';
 import { Timeline } from './Timeline';
 import { C3ModelStatus } from './C3ModelStatus';
+import { C3RecordedResults } from './C3RecordedResults';
+import { C3ScoreGraph } from './C3ScoreGraph';
+import type { C3Job } from '../../api/c3Client';
 
 type Phase = 'choose' | 'checking' | 'done' | 'error';
 
@@ -51,6 +54,7 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
   const [duration, setDuration] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [report, setReport] = useState<VideoCheckReport | null>(null);
+  const [recorded, setRecorded] = useState<C3Job | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +83,7 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
       setSelectedId(null);
       setError(null);
       setReport(null);
+      setRecorded(null);
       setCurrent(0);
       setProgress({ fraction: 0, stage: 'Opening the video' });
       setPhase('checking');
@@ -119,6 +124,7 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
     setFound([]);
     setSelectedId(null);
     setError(null);
+    setRecorded(null);
   }, [url, found.length]);
 
   const pick = useCallback((f: Found) => {
@@ -152,6 +158,15 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
   }, [found, current, phase]);
 
   const selected = found.find((f) => f.event.event_id === selectedId) ?? null;
+  const openRecorded = (job: C3Job) => {
+    const sourceStart = job.prediction?.source_context[0] ?? 0;
+    const items = (job.events ?? []).map(event => ({ ...c3Found(event, sourceStart),
+      startSeconds: Math.max(0, c3Found(event, sourceStart).startSeconds - sourceStart),
+      endSeconds: Math.max(0, c3Found(event, sourceStart).endSeconds - sourceStart) }));
+    setRecorded(job); setFile(null); setUrl(c3MediaUrl(job.job_id)); setFound(items);
+    setReport({ team: { status: 'completed', detectors: [] }, c3: { status: 'completed', job } });
+    setSelectedId(items[0]?.event.event_id ?? null); setCurrent(0); setPhase('done');
+  };
 
   /* ------------------------------------------------------------ step 1 */
 
@@ -200,6 +215,7 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
             {error}
           </p>
         ) : null}
+        {C3_ENABLED ? <C3RecordedResults onSelect={openRecorded} /> : null}
       </div>
     );
   }
@@ -213,7 +229,7 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
       <div className="check__main">
         <div className="check__titlebar">
           <p className="check__file" title={file?.name}>
-            {file?.name}
+            {recorded?.source_name ?? file?.name}
           </p>
           <button type="button" className="btn btn--small" onClick={reset}>
             {phase === 'checking' ? 'Cancel' : 'Check another video'}
@@ -228,6 +244,10 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
           onTimeUpdate={setCurrent}
           onDuration={setDuration}
         />
+        {recorded ? <div className="c3-notice"><strong>Recorded inference replay</strong>
+          <p>Displaying authentic output computed at {recorded.created_at}. No new inference runs during replay.</p>
+        </div> : null}
+        {report?.c3?.job ? <C3ScoreGraph job={report.c3.job} onSeek={t => seek(recorded ? t - (recorded.prediction?.source_context[0] ?? 0) : t)} /> : null}
 
         {phase === 'checking' ? (
           <div className="progress" role="status" aria-live="polite">
@@ -271,7 +291,7 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
       <aside className="check__side" aria-label="What was found">
         {report ? <div className="c3-notice" aria-label="Models checked">
           <strong>Models checked</strong>
-          <p>Registered team detectors: {report.team.status === 'failed' ? `failed — ${report.team.error}` : report.team.detectors.join(', ') || 'none registered'}.</p>
+          <p>{recorded ? 'Recorded C3 output only; team detectors do not run during replay.' : `Registered team detectors: ${report.team.status === 'failed' ? `failed — ${report.team.error}` : report.team.detectors.join(', ') || 'none registered'}.`}</p>
           {report.c3 ? <>
             <p><strong>C3 violence research: {report.c3.status === 'completed' ? 'completed' : 'incomplete'}</strong></p>
             {report.c3.error ? <p role="alert">{report.c3.error}</p> : null}
