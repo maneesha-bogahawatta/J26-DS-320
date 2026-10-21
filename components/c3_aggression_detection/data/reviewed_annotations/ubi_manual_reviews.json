@@ -1,0 +1,73 @@
+
+[
+  {
+    "video": "F_47_1_2_0_0.mp4",
+    "fight_onset_s": 160.0,
+    "auto_precursors": [
+      [157.6, 158.0],
+      [158.2, 158.8],
+      [159.4, 159.8]
+    ],
+    "review_decision": "uncertain",
+    "verified_precursors": [],
+    "notes": "Crowded street activity; aggressive intent is not clearly established."
+  },
+  {
+    "video": "F_84_1_2_0_0.mp4",
+    "fight_onset_s": 32.0,
+    "auto_precursors": [[28.0, 28.6]],
+    "review_decision": "uncertain",
+    "verified_precursors": [],
+    "notes": "Crowded response scene; pre-attack cues cannot be confidently established."
+  },
+  {
+    "video": "F_16_1_2_0_0.mp4",
+    "fight_onset_s": 16.0,
+    "auto_precursors": [[15.6, 16.0]],
+    "review_decision": "uncertain",
+    "verified_precursors": [],
+    "notes": "Rapid interaction near annotated onset; insufficient verified early-warning lead time."
+  },
+  {
+    "video": "F_88_0_0_0_0.mp4",
+    "fight_onset_s": 32.0,
+    "auto_precursors": [
+      [27.6, 28.0],
+      [29.0, 29.4]
+    ],
+    "review_decision": "uncertain",
+    "verified_precursors": [],
+    "notes": "Potentially relevant close-person interactions and raised arms. Exact precursor and physical-contact onset require further frame-level review."
+  },
+  
+
+{
+  "video": "F_66_1_2_0_0.mp4",
+  "fight_onset_s": 6.366667,
+  "auto_model": "precursor_heuristic_v2",
+  "auto_status": "no_proposal",
+  "review_decision": "potential_missed_precursor",
+  "verified_precursors": [],
+  "suggested_original_video_window": [
+    6.166667,
+    6.366667
+  ],
+  "estimated_contact_onset_s": 6.366667,
+  "estimated_lead_time_s": 0.2,
+  "notes": "Potential raised-arm confrontation before annotated fight onset. Short possible precursor, not independently verified."
+},
+
+
+{
+  "video": "F_57_0_2_0_0.mp4",
+  "review_decision": "uncertain",
+  "verified_precursors": [],
+  "notes": "Indoor sports setting with people moving and noticeable camera motion. No confident pre-attack cue established."
+},
+{
+  "video": "F_99_1_2_0_0.mp4",
+  "review_decision": "uncertain",
+  "verified_precursors": [],
+  "notes": "Night-time street and moving camera; distant interactions prevent confident precursor verification."
+  }
+]

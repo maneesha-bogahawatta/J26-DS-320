@@ -1,0 +1,4 @@
+# Install into data/phase1_work/testdeps to leave the team's environment intact.
+pytest==9.1.1
+pandas==3.0.6
+scipy==1.17.1

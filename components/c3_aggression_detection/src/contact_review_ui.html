@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C3 visible cue and contact review</title>
+<style>
+body{font:16px system-ui,sans-serif;background:#10202a;color:#edf5f8;max-width:1050px;margin:24px auto;padding:0 20px}p{line-height:1.5}button,select,input,textarea{font:inherit;padding:9px;border-radius:5px;border:1px solid #638496;background:#193847;color:#fff}button{cursor:pointer}label{display:block;margin:12px 0 5px}textarea{width:95%;min-height:70px}video{width:100%;max-height:450px;background:#000}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.card{border:1px solid #406677;padding:16px;margin:16px 0;border-radius:10px}.small{font-size:14px;color:#b9d2dd}#message{white-space:pre-wrap;color:#ffdb90}input[type=number]{width:135px}#clock{font-variant-numeric:tabular-nums;color:#88e6d4}input[type=checkbox]{width:20px;height:20px}
+</style>
+<h1>Visible threatening cue, contact and ongoing violence</h1>
+<p id="role"></p>
+<p>Use <b>original-video seconds</b>. Mark three different observations: first threatening cue, first physical contact, and ongoing violence. A dataset fight annotation does not establish visible first contact. If the relevant action is hidden, choose uncertain.</p>
+<div class="card">
+<label>Your reviewer ID <input id="reviewer" autocomplete="off" placeholder="Your own ID"></label>
+<label><input id="independent" type="checkbox"> I personally reviewed this footage independently.</label>
+<p class="small">Start blank. Do not view another person's decisions before reviewing. Software records your attestation but cannot authenticate independence. Export before closing; no decisions are uploaded.</p>
+<div class="row"><button id="download">Download my review JSON</button><label>Resume my own JSON <input type="file" id="resume" accept=".json"></label></div>
+</div>
+<div class="row"><button id="previous">Previous</button><select id="clips"></select><button id="next">Next</button><span id="progress"></span></div>
+<div class="card"><video id="video" controls preload="metadata"></video>
+<div class="row"><strong id="clock">Original time: —</strong><button id="back">−0.1 s</button><button id="forward">+0.1 s</button><label>Speed <select id="speed"><option>1</option><option>0.5</option><option>0.25</option></select></label></div>
+<p id="bounds" class="small"></p><p class="small">Silent visual review copy. Browser controls show relative time; annotation fields use the original clock above.</p></div>
+<div class="card">
+<label>Decision <select id="label"><option value="unreviewed">Unreviewed</option><option value="precursor">Observed threatening cue before confirmed visible contact</option><option value="non_aggressive">No aggression in explicitly reviewed interval</option><option value="active_fight">Ongoing physical violence</option><option value="already_violent">Already violent at clip start</option><option value="uncertain">Uncertain / insufficient evidence</option></select></label>
+<p class="small">Contact definition: first visible striking, forceful pushing, kicking or grappling contact in this observed event. Ordinary touching is not enough. If the clip begins during violence, first contact is unobserved.</p>
+<div class="row"><label>Coverage start <input type="number" step="0.001" id="coverageStart"><button data-mark="coverageStart">Current</button></label><label>Coverage end <input type="number" step="0.001" id="coverageEnd"><button data-mark="coverageEnd">Current</button></label></div>
+<label>First threatening cue <input type="number" step="0.001" id="firstCue"><button data-mark="firstCue">Current</button></label>
+<label>Observed threatening-cue intervals (JSON pairs, original seconds)<br><input id="cues" style="width:90%" placeholder="[[4.1,5.2]]"></label>
+<label>First physical-contact observation <select id="observation"><option value="not_observed">Not observed</option><option value="uncertain">Uncertain timing or visibility</option><option value="confirmed_visible">Confirmed visible first contact</option><option value="already_in_progress">Violence already in progress; first contact unobserved</option></select></label>
+<label>Confirmed first physical contact <input type="number" step="0.001" id="contact"><button data-mark="contact">Current</button></label>
+<div class="row"><label>Uncertain earliest contact <input type="number" step="0.001" id="earliest"></label><label>Uncertain latest contact <input type="number" step="0.001" id="latest"></label></div>
+<label><input type="checkbox" id="observed"> I personally observed the defined first contact in the reviewed footage.</label>
+<label><input type="checkbox" id="notInferred"> I did not infer contact from a dataset onset, filename, proposed alert or eventual fight.</label>
+<label>Ongoing-violence intervals (JSON pairs, original seconds)<br><input id="fight" style="width:90%" placeholder="[[5.5,8.0]]"></label>
+<label>Visible evidence, occlusion and uncertainty notes<textarea id="notes"></textarea></label>
+<p class="small">Precursor decisions require explicit observed cues strictly before visible contact. Uncertainty brackets remain provisional. Two distinct humans must agree exactly on all semantic fields. Import appends a new annotation version; it never overwrites prior decisions or averages disagreements. Non-aggressive labels apply only inside reviewed coverage.</p>
+</div><div id="message" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const config=__REVIEW_CONFIG__;
+const $=id=>document.getElementById(id);
+let form=structuredClone(config.form),selected=0;
+const current=()=>config.clips[selected],record=()=>form.records.find(r=>r.clip_id===current().clip_id);
+const number=id=>$(id).value===''?null:Number($(id).value);
+function save(){
+ const r=record(),lo=number('earliest'),hi=number('latest');
+ if((lo===null)!==(hi===null))throw Error('Enter both uncertainty bounds, or clear both.');
+ const cues=JSON.parse($('cues').value||'[]'),fight=JSON.parse($('fight').value||'[]');
+ if(!Array.isArray(cues)||!Array.isArray(fight))throw Error('Cue and fight intervals must be JSON arrays of pairs.');
+ Object.assign(r,{review_label:$('label').value,reviewed_ranges_s:[[number('coverageStart'),number('coverageEnd')]],precursors:cues,first_threatening_cue_s:number('firstCue'),first_physical_contact_s:number('contact'),verified_fight_intervals:fight,contact_observation:$('observation').value,contact_uncertainty_s:lo===null?null:[lo,hi],contact_personally_observed:$('observed').checked,contact_not_inferred_from_dataset_onset:$('notInferred').checked,review_notes:$('notes').value});
+ form.reviewer=$('reviewer').value.trim();form.independent_human_review=$('independent').checked;
+}
+function show(){
+ const c=current(),r=record();$('clips').value=String(selected);$('video').src=c.media;
+ $('bounds').textContent=`Available original-video coverage: ${c.clip_start_s.toFixed(3)}–${c.clip_end_s.toFixed(3)} s`;
+ $('coverageStart').value=r.reviewed_ranges_s[0]?.[0]??c.clip_start_s;$('coverageEnd').value=r.reviewed_ranges_s[0]?.[1]??c.clip_end_s;
+ $('label').value=r.review_label;$('firstCue').value=r.first_threatening_cue_s??'';$('contact').value=r.first_physical_contact_s??'';
+ $('cues').value=JSON.stringify(r.precursors);$('fight').value=JSON.stringify(r.verified_fight_intervals);
+ $('observation').value=r.contact_observation;$('earliest').value=r.contact_uncertainty_s?.[0]??'';$('latest').value=r.contact_uncertainty_s?.[1]??'';
+ $('observed').checked=r.contact_personally_observed===true;$('notInferred').checked=r.contact_not_inferred_from_dataset_onset===true;$('notes').value=r.review_notes||'';
+ $('previous').disabled=selected===0;$('next').disabled=selected===config.clips.length-1;
+ $('progress').textContent=`${form.records.filter(r=>r.review_label!=='unreviewed').length}/${form.records.length} reviewed`;
+ $('clock').textContent=`Original time: ${c.clip_start_s.toFixed(3)} s`;
+}
+function action(fn){try{$('message').textContent='';fn()}catch(e){$('message').textContent=e.message}}
+function move(i){action(()=>{save();selected=i;show()})}
+$('role').textContent=form.split==='train'?'Training reviews — locked test excluded':'Separate validation reviews — locked test excluded';
+config.clips.forEach((c,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`Clip ${i+1} of ${config.clips.length}`;$('clips').appendChild(o)});
+$('clips').onchange=()=>move(Number($('clips').value));$('previous').onclick=()=>move(selected-1);$('next').onclick=()=>move(selected+1);
+$('video').ontimeupdate=()=>$('clock').textContent=`Original time: ${(current().clip_start_s+$('video').currentTime).toFixed(3)} s`;
+$('video').onloadedmetadata=()=>$('video').playbackRate=Number($('speed').value);
+$('speed').onchange=()=>$('video').playbackRate=Number($('speed').value);
+$('back').onclick=()=>$('video').currentTime=Math.max(0,$('video').currentTime-.1);
+$('forward').onclick=()=>$('video').currentTime=Math.min($('video').duration,$('video').currentTime+.1);
+document.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>{$(b.dataset.mark).value=Math.min(current().clip_end_s,current().clip_start_s+$('video').currentTime).toFixed(3)});
+$('download').onclick=()=>action(()=>{
+ save();if(form.records.some(r=>r.review_label!=='unreviewed')&&(!form.reviewer||!form.independent_human_review))throw Error('Supply your own reviewer ID and independent-human attestation.');
+ const blob=new Blob([JSON.stringify(form,null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${form.split}_${(form.reviewer||'unreviewed').replace(/[^a-z0-9_-]/gi,'_')}_contact.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('message').textContent='Saved your independent decision file. CLI import validates semantic bounds and appends a new version.';
+});
+$('resume').onchange=async()=>{try{
+ const loaded=JSON.parse(await $('resume').files[0].text());
+ if(loaded.schema!==form.schema||loaded.pack_sha256!==form.pack_sha256||loaded.split!==form.split)throw Error('Different contact schema, pack or split.');
+ if(!Array.isArray(loaded.records)||loaded.records.length!==form.records.length||loaded.records.some((r,i)=>r.clip_id!==config.form.records[i].clip_id))throw Error('Different clip identities.');
+ form=loaded;$('reviewer').value=form.reviewer||'';$('independent').checked=form.independent_human_review===true;show();
+}catch(e){$('message').textContent=e.message}};
+if(config.clips.length)show();else $('message').textContent='No eligible clips in this split.';
+</script></html>

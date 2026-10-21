@@ -75,3 +75,5 @@ runs/
 # ---- COMPILED DOCS ----
 docs/**/*.pdf
 !docs/proposal/*.pdf
+
+/components/c3_aggression_detection/data/dataset/
