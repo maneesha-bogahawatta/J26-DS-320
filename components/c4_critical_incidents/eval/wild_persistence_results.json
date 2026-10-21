@@ -1,0 +1,194 @@
+{
+  "k1@0.4/wild": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.4,
+    "domains": [
+      "wild"
+    ],
+    "falls": 9,
+    "detected": 8,
+    "recall": 0.889,
+    "precision": 0.571,
+    "f1": 0.696,
+    "false_alarms": 6,
+    "false_alarms_on_fall_like": 3,
+    "false_alarms_per_hour": 124.7,
+    "latency_mean_s": 3.98
+  },
+  "k1@0.4/staged": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.4,
+    "domains": [
+      "staged"
+    ],
+    "falls": 2,
+    "detected": 2,
+    "recall": 1.0,
+    "precision": 0.5,
+    "f1": 0.667,
+    "false_alarms": 2,
+    "false_alarms_on_fall_like": 0,
+    "false_alarms_per_hour": 127.2,
+    "latency_mean_s": 5.5
+  },
+  "k1@0.5/wild": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.5,
+    "domains": [
+      "wild"
+    ],
+    "falls": 9,
+    "detected": 7,
+    "recall": 0.778,
+    "precision": 0.636,
+    "f1": 0.7,
+    "false_alarms": 4,
+    "false_alarms_on_fall_like": 2,
+    "false_alarms_per_hour": 83.1,
+    "latency_mean_s": 4.04
+  },
+  "k1@0.5/staged": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.5,
+    "domains": [
+      "staged"
+    ],
+    "falls": 2,
+    "detected": 2,
+    "recall": 1.0,
+    "precision": 0.667,
+    "f1": 0.8,
+    "false_alarms": 1,
+    "false_alarms_on_fall_like": 0,
+    "false_alarms_per_hour": 63.6,
+    "latency_mean_s": 5.5
+  },
+  "k2@0.4/wild": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.4,
+    "domains": [
+      "wild"
+    ],
+    "falls": 9,
+    "detected": 5,
+    "recall": 0.556,
+    "precision": 0.625,
+    "f1": 0.588,
+    "false_alarms": 3,
+    "false_alarms_on_fall_like": 2,
+    "false_alarms_per_hour": 62.3,
+    "latency_mean_s": 4.2
+  },
+  "k2@0.4/staged": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.4,
+    "domains": [
+      "staged"
+    ],
+    "falls": 2,
+    "detected": 2,
+    "recall": 1.0,
+    "precision": 0.667,
+    "f1": 0.8,
+    "false_alarms": 1,
+    "false_alarms_on_fall_like": 0,
+    "false_alarms_per_hour": 63.6,
+    "latency_mean_s": 7.5
+  },
+  "k2@0.5/wild": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.5,
+    "domains": [
+      "wild"
+    ],
+    "falls": 9,
+    "detected": 5,
+    "recall": 0.556,
+    "precision": 0.714,
+    "f1": 0.625,
+    "false_alarms": 2,
+    "false_alarms_on_fall_like": 1,
+    "false_alarms_per_hour": 41.6,
+    "latency_mean_s": 4.2
+  },
+  "k2@0.5/staged": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.5,
+    "domains": [
+      "staged"
+    ],
+    "falls": 2,
+    "detected": 2,
+    "recall": 1.0,
+    "precision": 0.667,
+    "f1": 0.8,
+    "false_alarms": 1,
+    "false_alarms_on_fall_like": 0,
+    "false_alarms_per_hour": 63.6,
+    "latency_mean_s": 7.5
+  },
+  "k3@0.4/wild": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.4,
+    "domains": [
+      "wild"
+    ],
+    "falls": 9,
+    "detected": 5,
+    "recall": 0.556,
+    "precision": 0.833,
+    "f1": 0.667,
+    "false_alarms": 1,
+    "false_alarms_on_fall_like": 1,
+    "false_alarms_per_hour": 20.8,
+    "latency_mean_s": 6.0
+  },
+  "k3@0.4/staged": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.4,
+    "domains": [
+      "staged"
+    ],
+    "falls": 2,
+    "detected": 2,
+    "recall": 1.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "false_alarms": 0,
+    "false_alarms_on_fall_like": 0,
+    "false_alarms_per_hour": 0.0,
+    "latency_mean_s": 8.5
+  },
+  "k3@0.5/wild": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.5,
+    "domains": [
+      "wild"
+    ],
+    "falls": 9,
+    "detected": 5,
+    "recall": 0.556,
+    "precision": 0.833,
+    "f1": 0.667,
+    "false_alarms": 1,
+    "false_alarms_on_fall_like": 1,
+    "false_alarms_per_hour": 20.8,
+    "latency_mean_s": 6.0
+  },
+  "k3@0.5/staged": {
+    "model": "gmdcsa_6f_ensemble",
+    "thr": 0.5,
+    "domains": [
+      "staged"
+    ],
+    "falls": 2,
+    "detected": 2,
+    "recall": 1.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "false_alarms": 0,
+    "false_alarms_on_fall_like": 0,
+    "false_alarms_per_hour": 0.0,
+    "latency_mean_s": 8.5
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "results": [
+    {
+      "video": "video1.avi",
+      "ground_truth": 1431,
+      "detected": 1430,
+      "error_frames": 1,
+      "error_sec": 0.0,
+      "category": "TP"
+    },
+    {
+      "video": "video2.avi",
+      "ground_truth": null,
+      "detected": 135,
+      "error_frames": null,
+      "error_sec": null,
+      "category": "FP"
+    },
+    {
+      "video": "video3.avi",
+      "ground_truth": 1755,
+      "detected": 2010,
+      "error_frames": 255,
+      "error_sec": 8.5,
+      "category": "TP (late)"
+    },
+    {
+      "video": "video4.avi",
+      "ground_truth": 455,
+      "detected": null,
+      "error_frames": null,
+      "error_sec": null,
+      "category": "FN"
+    },
+    {
+      "video": "video5.avi",
+      "ground_truth": 1070,
+      "detected": 165,
+      "error_frames": 905,
+      "error_sec": 30.2,
+      "category": "TP (late)"
+    },
+    {
+      "video": "video6.avi",
+      "ground_truth": 3484,
+      "detected": 100,
+      "error_frames": 3384,
+      "error_sec": 112.8,
+      "category": "TP (late)"
+    },
+    {
+      "video": "video7.avi",
+      "ground_truth": 3550,
+      "detected": 1455,
+      "error_frames": 2095,
+      "error_sec": 69.8,
+      "category": "TP (late)"
+    },
+    {
+      "video": "video8.avi",
+      "ground_truth": 3550,
+      "detected": 1365,
+      "error_frames": 2185,
+      "error_sec": 72.8,
+      "category": "TP (late)"
+    },
+    {
+      "video": "video9.avi",
+      "ground_truth": 1168,
+      "detected": 1100,
+      "error_frames": 68,
+      "error_sec": 2.3,
+      "category": "TP"
+    },
+    {
+      "video": "video10.avi",
+      "ground_truth": 1421,
+      "detected": 1085,
+      "error_frames": 336,
+      "error_sec": 11.2,
+      "category": "TP (late)"
+    },
+    {
+      "video": "video11.avi",
+      "ground_truth": null,
+      "detected": 100,
+      "error_frames": null,
+      "error_sec": null,
+      "category": "FP"
+    }
+  ],
+  "metrics": {
+    "detection_rate": 0.8888888888888888,
+    "within_tolerance_rate": 0.2222222222222222,
+    "false_alarm_rate": 1.0,
+    "mean_error_sec": 38.454166666666666
+  }
+}

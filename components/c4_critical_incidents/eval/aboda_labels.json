@@ -1,0 +1,68 @@
+{
+  "video1.avi": {
+    "abandonment_frame": 1431,
+    "total_frames": 2189,
+    "fps": 29.97,
+    "notes": "Backpack left on floor as two people walk away together"
+  },
+  "video2.avi": {
+    "abandonment_frame": null,
+    "total_frames": 2818,
+    "fps": 30.0,
+    "notes": "No abandonment event visible at current sampling resolution - needs full-res review or may be a distractor/negative sequence"
+  },
+  "video3.avi": {
+    "abandonment_frame": 1755,
+    "total_frames": 2818,
+    "fps": 30.0,
+    "notes": "Man in brown jacket crouches to set down bag near manhole cover, then walks away"
+  },
+  "video4.avi": {
+    "abandonment_frame": 455,
+    "total_frames": 1169,
+    "fps": 29.97,
+    "notes": "Man in brown jacket sets bag down near blue utility box, lingers, then walks away ~f620"
+  },
+  "video5.avi": {
+    "abandonment_frame": 1070,
+    "total_frames": 3293,
+    "fps": 30.0,
+    "notes": "Night-vision angle, low resolution. Object placement point approximate (f1010-1070 window) - too small to pinpoint exact frame at this resolution. Object confirmed stationary and separated from all people by f1513."
+  },
+  "video6.avi": {
+    "abandonment_frame": 3484,
+    "total_frames": 6700,
+    "fps": 30.0,
+    "notes": "Person crouches near pillar, sets object down, stands and walks away ~f3484. Note: a second person later interacts near the same spot around f5382-5681 - worth checking separately (could be pickup/collection, or a different scenario phase)."
+  },
+  "video7.avi": {
+    "abandonment_frame": 3550,
+    "total_frames": 4785,
+    "fps": 30.0,
+    "notes": "Person enters classroom carrying purple bag (~f3334), walks around holding it, sets it on desk ~f3550, continues walking around room without leaving frame. Unusual pattern: owner loiters nearby rather than exiting immediately."
+  },
+  "video8.avi": {
+    "abandonment_frame": 3550,
+    "total_frames": 4600,
+    "fps": 30.0,
+    "notes": "Person enters classroom carrying hard case/briefcase (~f3289), sets it on desk ~f3550, lingers nearby before eventually leaving frame."
+  },
+  "video9.avi": {
+    "abandonment_frame": 1168,
+    "total_frames": 2393,
+    "fps": 30.0,
+    "notes": "Person enters classroom carrying purple bag (~f598), sets it on desk, walking away by f1168"
+  },
+  "video10.avi": {
+    "abandonment_frame": 1421,
+    "total_frames": 2094,
+    "fps": 30.0,
+    "notes": "Person enters classroom with dark bag (~f1196), sets it on desk ~f1226, lingers checking phone, walks away starting f1421"
+  },
+  "video11.avi": {
+    "abandonment_frame": null,
+    "total_frames": 4600,
+    "fps": 30.0,
+    "notes": "Crowded mall/plaza scene with constant dense foot traffic throughout. No clear single abandonment event identifiable at available resolution - likely intended as a negative/distractor sequence for testing false-positive rate in crowded conditions, consistent with ABODA README description of \"crowded scenes\" as a challenge case."
+  }
+}
