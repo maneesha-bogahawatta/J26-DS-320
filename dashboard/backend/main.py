@@ -9,7 +9,7 @@ Implements the group's agreed REST contract so that:
   * nobody has to agree on a database before they can agree on a format.
 
 Run it:
-    cd backend_mock
+    cd backend_mock 
     pip install -r requirements.txt
     uvicorn main:app --reload
 
@@ -24,19 +24,20 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request  
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from schemas import (
     ActionRequest,
-    CameraSource,
+    CameraSource, 
     HealthStatus,
     IncidentEvent,
     utc_now_iso,
 )
 from store import DuplicateEventError, EventNotFoundError, EventStore
-from detect import build_router, load_detectors
+from detect import UPLOAD_DIR, build_router, load_detectors
 
 API_VERSION = "1.1.0"
 
@@ -57,7 +58,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5173", 
         "http://localhost:4173",
         "http://127.0.0.1:4173",
     ],
@@ -65,15 +66,19 @@ app.add_middleware(
     # (e.g. https://192.168.1.20:5173) so a phone can use its camera.
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?",
     allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["*"],  
 )
 
 store = EventStore(persist=os.environ.get("PERSIST_EVENTS", "0") == "1")
 
-# The Check video screen's endpoints. Teammates' models register themselves
+# The Check video screen's endpoints. Teammates' models register themselves 
 # from backend_mock/detectors/ — see detect.py.
 load_detectors()
 app.include_router(build_router(store))
+
+# Uploaded videos are served back so the Alerts screen can replay the clip of an alert.
+UPLOAD_DIR.mkdir(exist_ok=True)  
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.exception_handler(EventNotFoundError)
@@ -81,7 +86,7 @@ async def _event_not_found(_: Request, exc: EventNotFoundError) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": f'No event with id "{exc.args[0]}".'})
 
 
-@app.exception_handler(DuplicateEventError)
+@app.exception_handler(DuplicateEventError)  
 async def _duplicate_event(_: Request, exc: DuplicateEventError) -> JSONResponse:
     return JSONResponse(
         status_code=409,
@@ -102,7 +107,7 @@ def health() -> HealthStatus:
     """Is the service up, and which components have reported at least once?"""
     return HealthStatus(
         ok=True,
-        mode="mock",
+        mode="mock", 
         api_version=API_VERSION,
         components_reporting=store.components_reporting(),
         checked_at=utc_now_iso(),
@@ -112,7 +117,7 @@ def health() -> HealthStatus:
 # -------------------------------------------------------------------- cameras
 
 
-@app.get("/api/v1/cameras", response_model=list[CameraSource], tags=["sources"])
+@app.get("/api/v1/cameras", response_model=list[CameraSource], tags=["sources"])  
 def list_cameras() -> list[CameraSource]:
     """Registered cameras and recorded clips."""
     return store.list_cameras()
@@ -125,7 +130,7 @@ def list_cameras() -> list[CameraSource]:
 def list_events(
     status: str | None = Query(default=None, description="new | acknowledged | false_positive | escalated | resolved"),
     camera_id: str | None = Query(default=None),
-    component_id: str | None = Query(default=None, description="component_1 … component_4"),
+    component_id: str | None = Query(default=None, description="component_1 … component_4"), 
     incident_type: str | None = Query(default=None),
 ) -> list[IncidentEvent]:
     """The alert queue, newest first. All filters are optional and combine with AND."""
@@ -139,16 +144,16 @@ def list_events(
 
 @app.get("/api/v1/events/{event_id}", response_model=IncidentEvent, tags=["events"])
 def get_event(event_id: str) -> IncidentEvent:
-    """One alert with its evidence signals and full audit trail."""
+    """One alert with its evidence signals and full audit trail.""" 
     return store.get_event(event_id)
 
 
-@app.post("/api/v1/events", response_model=IncidentEvent, status_code=201, tags=["events"])
+@app.post("/api/v1/events", response_model=IncidentEvent, status_code=201, tags=["events"]) 
 def submit_event(event: IncidentEvent) -> IncidentEvent:
     """
     **Detection pipelines POST here.**
 
-    The body is one incident event in contract v1.1. A malformed payload comes
+    The body is one incident event in contract v1.1. A malformed payload comes 
     back as a 422 naming the exact field, so check the response body — it will
     tell you precisely what to fix.
     """
@@ -160,8 +165,8 @@ def update_event(event_id: str, request: ActionRequest) -> IncidentEvent:
     """
     Record an operator decision.
 
-    The dashboard calls this — pipelines normally do not. Note that a
-    `false_alarm` changes the status but never removes the event: rejected
+    The dashboard calls this — pipelines normally do not. Note that a 
+    `false_alarm` changes the status but never removes the event: rejected 
     alerts are needed for the false-alarm rate and the hard-negative set.
     """
     event = store.get_event(event_id)
@@ -177,5 +182,5 @@ def root() -> dict[str, str]:
         "version": API_VERSION,
         "docs": "/docs",
         "events": "/api/v1/events",
-        "detectors": "/api/v1/detect/detectors",
+        "detectors": "/api/v1/detect/detectors",  
     }

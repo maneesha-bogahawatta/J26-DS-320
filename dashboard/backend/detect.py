@@ -188,7 +188,8 @@ def build_router(store: EventStore) -> APIRouter:
         for name, fn in VIDEO_DETECTORS.items():
             for event in _run(name, fn, path, source_id):
                 if not event.media_ref:
-                    event.media_ref = f"uploads/{path.name}"
+                    # a full URL, so the dashboard can replay it from this server (main.py serves /uploads)
+                    event.media_ref = f"{str(request.base_url).rstrip('/')}/uploads/{path.name}"
                 events.append(event)
 
         note = None
