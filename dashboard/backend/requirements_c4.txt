@@ -1,0 +1,5 @@
+# extra packages for the C4 detector (use Python 3.12; 3.14 has no mediapipe/torch wheels yet)
+numpy
+opencv-python
+torch
+mediapipe

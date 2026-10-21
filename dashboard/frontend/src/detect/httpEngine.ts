@@ -17,8 +17,8 @@ interface DetectResponse {
   detectors_run?: string[];
 }
 
-/** One live frame per second is plenty for a server-side model. */
-const FRAME_INTERVAL_S = 1;
+/** C4 needs ~5 frames per second: its object timer and fall window assume that rate (1/s is too sparse). */
+const FRAME_INTERVAL_S = 0.2;
 const FRAME_WIDTH = 640;
 
 function toFound(event: IncidentEvent, at: number, mediaUrl: string | null): Found {
@@ -51,7 +51,8 @@ export function createHttpEngine(baseUrl: string): DetectionEngine {
 
     async analyzeVideo(file: File, { sourceId, mediaUrl, onProgress, signal }: AnalyzeOptions): Promise<Found[]> {
       onProgress?.({ fraction: null, stage: 'Sending the video to the detection server' });
-      const url = `${root}/api/v1/detect/video?source_id=${encodeURIComponent(sourceId)}&filename=${encodeURIComponent(file.name)}`;
+      const shortName = file.name.length > 120 ? file.name.slice(0, 100) + file.name.slice(file.name.lastIndexOf('.')) : file.name;
+      const url = `${root}/api/v1/detect/video?source_id=${encodeURIComponent(sourceId)}&filename=${encodeURIComponent(shortName)}`;
       let res: Response;
       try {
         res = await fetch(url, {
