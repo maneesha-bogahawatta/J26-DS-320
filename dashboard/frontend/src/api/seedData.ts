@@ -1,0 +1,470 @@
+/**
+ * Seeded demo data for MOCK mode.
+ *
+ * These events are hand-written stand-ins for what Members 1-3 will POST once
+ * their pipelines run. They deliberately include awkward cases, because the
+ * dashboard has to survive them:
+ *
+ *   - an event with no confidence score (rule-based detector)
+ *   - an event with no bounding box (detector reports zone-level only)
+ *   - an event whose clip is missing from disk
+ *   - an incident_type that is not in the registry (a teammate's new detector)
+ *   - a low-score event
+ *   - events already actioned, so Event History is populated on first load
+ *
+ * NOTE ON MEDIA: the clips referenced here are SYNTHETIC placeholders generated
+ * for this prototype. No real CCTV footage and no social-media video is
+ * committed to this repository. Drop your own consented clips into
+ * `public/clips/` and point `media_ref` at them.
+ */
+
+import type { CameraSource, IncidentEvent } from '../types/events';
+
+export const SEED_CAMERAS: CameraSource[] = [
+  {
+    camera_id: 'clip_01',
+    label: 'Clip 01 — Lobby (synthetic)',
+    kind: 'recorded_clip',
+    media_ref: 'clips/clip_01.mp4',
+    source_note: 'Synthetic placeholder generated for the prototype. Replace with consented footage.',
+  },
+  {
+    camera_id: 'clip_02',
+    label: 'Clip 02 — ATM vestibule (synthetic)',
+    kind: 'recorded_clip',
+    media_ref: 'clips/clip_02.mp4',
+    source_note: 'Synthetic placeholder generated for the prototype.',
+  },
+  {
+    camera_id: 'clip_03',
+    label: 'Clip 03 — Corridor (synthetic)',
+    kind: 'recorded_clip',
+    media_ref: 'clips/clip_03.mp4',
+    source_note: 'Synthetic placeholder generated for the prototype.',
+  },
+  {
+    camera_id: 'clip_04',
+    label: 'Clip 04 — Waiting area (synthetic)',
+    kind: 'recorded_clip',
+    media_ref: 'clips/clip_04.mp4',
+    source_note: 'Synthetic placeholder generated for the prototype.',
+  },
+  {
+    camera_id: 'clip_05',
+    label: 'Clip 05 — Service entrance',
+    kind: 'recorded_clip',
+    media_ref: null,
+    source_note: 'Clip not present on this machine — demonstrates the missing-media state.',
+  },
+];
+
+/** Minutes-ago helper so the demo queue always looks current. */
+function ago(minutes: number): string {
+  return new Date(Date.now() - minutes * 60_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+export function buildSeedEvents(): IncidentEvent[] {
+  const events: IncidentEvent[] = [
+    // ---------- C4 — Bogahawatta's own component ----------
+    {
+      event_id: 'evt-c4-0007',
+      component_id: 'component_4',
+      incident_type: 'fall',
+      camera_id: 'clip_01',
+      timestamp_detected: ago(2),
+      priority: 'high',
+      status: 'new',
+      summary: 'Potential fall — review required.',
+      evidence: [
+        { name: 'downward_motion', value: 0.76, unit: null, description: 'Vertical velocity of the torso keypoint over 0.8 s.' },
+        { name: 'posture_aspect_ratio', value: 2.4, unit: null, description: 'Width over height of the person box. Above ~1.5 means a horizontal posture.' },
+        { name: 'torso_angle', value: 74, unit: 'degrees from vertical', description: 'Shoulder-to-hip line. Near 90 is lying down.' },
+        { name: 'low_posture_duration', value: 4.1, unit: 'seconds', description: 'Time held below the standing-height threshold — this is what separates a fall from bending or kneeling.' },
+        { name: 'post_fall_movement', value: 0.08, unit: null, description: 'Movement after landing. Low values suggest the person did not get up.' },
+      ],
+      // Matches the figure's real position in the generated clip at t=5.0,
+      // so the overlay can be checked against something known.
+      bounding_box: { x_min: 0.379, y_min: 0.617, x_max: 0.598, y_max: 0.789 },
+      track_id: 'person-12',
+      media_ref: 'clips/clip_01.mp4',
+      media_offset_seconds: 5.0,
+      confidence: 0.82,
+      score_calibrated: false,
+      zone_id: 'lobby_floor',
+      model_name: 'fall_cnn_lstm',
+      model_version: '0.1',
+      audit: [],
+    },
+    {
+      event_id: 'evt-c4-0006',
+      component_id: 'component_4',
+      incident_type: 'abandoned_object',
+      camera_id: 'clip_04',
+      timestamp_detected: ago(9),
+      priority: 'medium',
+      status: 'new',
+      summary: 'Potentially unattended object — likely owner has moved away.',
+      evidence: [
+        { name: 'object_dwell_time', value: 92, unit: 'seconds', description: 'How long the object has been static.' },
+        { name: 'owner_separation', value: 6.4, unit: 'metres (est.)', description: 'Estimated distance from the likely owner track. Ownership is inferred, not proven.' },
+        { name: 'object_displacement', value: 0.02, unit: null, description: 'Movement of the object itself. Near zero means it is stationary.' },
+        { name: 'owner_association_score', value: 0.69, unit: null, description: 'Confidence that person-31 is the owner, from proximity and contact duration. Not proof.' },
+      ],
+      bounding_box: { x_min: 0.496, y_min: 0.667, x_max: 0.546, y_max: 0.778 },
+      track_id: 'object-07',
+      related_tracks: [
+        {
+          track_id: 'person-31',
+          role: 'likely_owner',
+          note: 'Last track in sustained contact with the object before separation.',
+          association_score: 0.69,
+        },
+      ],
+      media_ref: 'clips/clip_04.mp4',
+      media_offset_seconds: 6.0,
+      confidence: 0.71,
+      score_calibrated: false,
+      zone_id: 'waiting_area',
+      model_name: 'abandoned_obj_tracker',
+      model_version: '0.2',
+      audit: [],
+    },
+    {
+      // Missing clip on disk — proves the "media unavailable" state.
+      event_id: 'evt-c4-0005',
+      component_id: 'component_4',
+      incident_type: 'abandoned_object',
+      camera_id: 'clip_05',
+      timestamp_detected: ago(21),
+      priority: 'low',
+      status: 'new',
+      summary: 'Potentially unattended object — short dwell, low score.',
+      evidence: [
+        { name: 'object_dwell_time', value: 34, unit: 'seconds' },
+        { name: 'owner_separation', value: 2.1, unit: 'metres (est.)' },
+      ],
+      bounding_box: null,
+      track_id: 'object-09',
+      media_ref: null,
+      media_offset_seconds: null,
+      confidence: 0.38,
+      score_calibrated: false,
+      zone_id: 'service_entrance',
+      model_name: 'abandoned_obj_tracker',
+      model_version: '0.2',
+      audit: [],
+    },
+
+    // ---------- C1 — Spatial Anomaly Detection ----------
+    {
+      event_id: 'evt-c1-0014',
+      component_id: 'component_1',
+      incident_type: 'tailgating',
+      camera_id: 'clip_03',
+      timestamp_detected: ago(5),
+      priority: 'high',
+      status: 'new',
+      summary: 'Possible tailgating at the controlled door — two tracks, one entry gap.',
+      evidence: [
+        { name: 'entry_gap', value: 1.4, unit: 'seconds', description: 'Time between the two tracks crossing the door line.' },
+        { name: 'follower_distance', value: 0.9, unit: 'metres (est.)' },
+        { name: 'door_zone', value: 'door_restricted_a', unit: null },
+      ],
+      bounding_box: { x_min: 0.305, y_min: 0.415, x_max: 0.377, y_max: 0.785 },
+      track_id: 'person-44',
+      related_tracks: [
+        { track_id: 'person-43', role: 'leader', note: 'Crossed the door line 1.4 s earlier.', association_score: null },
+      ],
+      media_ref: 'clips/clip_03.mp4',
+      media_offset_seconds: 5.0,
+      confidence: 0.79,
+      score_calibrated: false,
+      zone_id: 'door_restricted_a',
+      model_name: 'spatial_rel_gnn',
+      model_version: '0.1',
+      audit: [],
+    },
+    {
+      event_id: 'evt-c1-0013',
+      component_id: 'component_1',
+      incident_type: 'crowding',
+      camera_id: 'clip_03',
+      timestamp_detected: ago(33),
+      priority: 'medium',
+      status: 'acknowledged',
+      summary: 'Sudden crowding — person count rose sharply against the zone baseline.',
+      evidence: [
+        { name: 'person_count', value: 11, unit: 'people' },
+        { name: 'baseline_count', value: 3, unit: 'people' },
+        { name: 'rise_window', value: 12, unit: 'seconds' },
+      ],
+      bounding_box: null,
+      track_id: null,
+      media_ref: 'clips/clip_03.mp4',
+      media_offset_seconds: 1.0,
+      confidence: 0.66,
+      score_calibrated: false,
+      zone_id: 'corridor_mid',
+      model_name: 'spatial_rel_gnn',
+      model_version: '0.1',
+      audit: [
+        {
+          action: 'acknowledge',
+          at: ago(30),
+          operator_id: 'OP-01',
+          note: 'Scheduled shift change — expected footfall.',
+          from_status: 'new',
+          to_status: 'acknowledged',
+        },
+      ],
+    },
+    {
+      // Unregistered incident_type — proves graceful degradation.
+      event_id: 'evt-c1-0012',
+      component_id: 'component_1',
+      incident_type: 'queue_jump',
+      camera_id: 'clip_02',
+      timestamp_detected: ago(48),
+      priority: 'low',
+      status: 'new',
+      summary: 'Unusual queue ordering observed — review required.',
+      evidence: [{ name: 'order_violation_count', value: 2, unit: null }],
+      bounding_box: { x_min: 0.4, y_min: 0.35, x_max: 0.62, y_max: 0.9 },
+      track_id: 'person-58',
+      media_ref: 'clips/clip_02.mp4',
+      media_offset_seconds: 4.0,
+      confidence: null,
+      score_calibrated: false,
+      zone_id: 'atm_queue',
+      model_name: 'queue_order_rules',
+      model_version: '0.0.1',
+      audit: [],
+    },
+
+    // ---------- C2 — Predictive Loitering ----------
+    {
+      event_id: 'evt-c2-0021',
+      component_id: 'component_2',
+      incident_type: 'loitering',
+      camera_id: 'clip_02',
+      timestamp_detected: ago(7),
+      priority: 'medium',
+      status: 'new',
+      summary: 'Possible loitering near the ATM — dwell pattern differs from normal waiting.',
+      evidence: [
+        { name: 'dwell_time', value: 184, unit: 'seconds' },
+        { name: 'path_reversals', value: 6, unit: null, description: 'Back-and-forth direction changes — unusual for someone queueing.' },
+        { name: 'trajectory_entropy', value: 0.81, unit: null, description: 'Irregularity of the movement path. Higher means less goal-directed.' },
+        { name: 'queue_alignment', value: false, unit: null, description: 'Whether the track followed the normal queue line.' },
+      ],
+      bounding_box: { x_min: 0.164, y_min: 0.415, x_max: 0.237, y_max: 0.785 },
+      track_id: 'person-27',
+      media_ref: 'clips/clip_02.mp4',
+      media_offset_seconds: 6.0,
+      confidence: 0.74,
+      score_calibrated: false,
+      zone_id: 'atm_zone',
+      model_name: 'loiter_gru',
+      model_version: '0.3',
+      audit: [],
+    },
+    {
+      // Rule-based detector with no score at all.
+      event_id: 'evt-c2-0020',
+      component_id: 'component_2',
+      incident_type: 'loitering',
+      camera_id: 'clip_04',
+      timestamp_detected: ago(64),
+      priority: 'low',
+      status: 'false_positive',
+      summary: 'Possible loitering — extended dwell in the waiting area.',
+      evidence: [
+        { name: 'dwell_time', value: 240, unit: 'seconds' },
+        { name: 'path_reversals', value: 1, unit: null },
+      ],
+      bounding_box: { x_min: 0.6, y_min: 0.4, x_max: 0.78, y_max: 0.93 },
+      track_id: 'person-19',
+      media_ref: 'clips/clip_04.mp4',
+      media_offset_seconds: 2.5,
+      confidence: null,
+      score_calibrated: false,
+      zone_id: 'waiting_area',
+      model_name: 'loiter_threshold_rules',
+      model_version: '0.1',
+      audit: [
+        {
+          action: 'false_alarm',
+          at: ago(60),
+          operator_id: 'OP-01',
+          note: 'Person was waiting for a counter appointment. Fixed-timer rule fired as expected.',
+          from_status: 'new',
+          to_status: 'false_positive',
+        },
+      ],
+    },
+
+    // ---------- C3 — Aggression & Violence ----------
+    {
+      event_id: 'evt-c3-0031',
+      component_id: 'component_3',
+      incident_type: 'rapid_approach',
+      camera_id: 'clip_01',
+      timestamp_detected: ago(12),
+      priority: 'high',
+      status: 'escalated',
+      summary: 'Rapid approach toward another person — review required.',
+      evidence: [
+        { name: 'approach_velocity', value: 2.8, unit: 'm/s (est.)' },
+        { name: 'closing_distance', value: 0.6, unit: 'metres (est.)' },
+        { name: 'torso_lean', value: 0.42, unit: null, description: 'Forward lean of the torso keypoints.' },
+      ],
+      bounding_box: { x_min: 0.12, y_min: 0.25, x_max: 0.38, y_max: 0.94 },
+      track_id: 'person-33',
+      media_ref: 'clips/clip_01.mp4',
+      media_offset_seconds: 1.5,
+      confidence: 0.88,
+      score_calibrated: false,
+      zone_id: 'lobby_floor',
+      model_name: 'stgcn_aggression',
+      model_version: '0.2',
+      audit: [
+        {
+          action: 'acknowledge',
+          at: ago(11),
+          operator_id: 'OP-02',
+          note: null,
+          from_status: 'new',
+          to_status: 'acknowledged',
+        },
+        {
+          action: 'escalate',
+          at: ago(10),
+          operator_id: 'OP-02',
+          note: 'Sent floor supervisor to check. Two people, raised voices on the clip.',
+          from_status: 'acknowledged',
+          to_status: 'escalated',
+        },
+      ],
+    },
+    {
+      event_id: 'evt-c3-0030',
+      component_id: 'component_3',
+      incident_type: 'concealment',
+      camera_id: 'clip_03',
+      timestamp_detected: ago(26),
+      priority: 'medium',
+      status: 'new',
+      summary: 'Possible concealment behaviour — hand-to-body movement near merchandise.',
+      evidence: [
+        { name: 'hand_to_torso_events', value: 3, unit: null },
+        { name: 'occlusion_ratio', value: 0.47, unit: null, description: 'Share of the pose that was occluded. High values reduce reliability.' },
+        { name: 'dwell_at_shelf', value: 41, unit: 'seconds' },
+      ],
+      bounding_box: { x_min: 0.55, y_min: 0.2, x_max: 0.8, y_max: 0.9 },
+      track_id: 'person-51',
+      media_ref: 'clips/clip_03.mp4',
+      media_offset_seconds: 7.0,
+      confidence: 0.52,
+      score_calibrated: false,
+      zone_id: 'shelf_row_3',
+      model_name: 'stgcn_aggression',
+      model_version: '0.2',
+      audit: [],
+    },
+    {
+      event_id: 'evt-c3-0029',
+      component_id: 'component_3',
+      incident_type: 'violence',
+      camera_id: 'clip_01',
+      timestamp_detected: ago(95),
+      priority: 'high',
+      status: 'resolved',
+      summary: 'Possible physical altercation between two tracks.',
+      evidence: [
+        { name: 'inter_skeleton_velocity', value: 3.4, unit: 'm/s (est.)' },
+        { name: 'limb_contact_events', value: 5, unit: null },
+        { name: 'occlusion_ratio', value: 0.31, unit: null },
+      ],
+      bounding_box: { x_min: 0.3, y_min: 0.22, x_max: 0.66, y_max: 0.96 },
+      track_id: 'person-08',
+      media_ref: 'clips/clip_01.mp4',
+      media_offset_seconds: 4.5,
+      confidence: 0.91,
+      score_calibrated: false,
+      zone_id: 'lobby_floor',
+      model_name: 'stgcn_aggression',
+      model_version: '0.2',
+      audit: [
+        { action: 'acknowledge', at: ago(94), operator_id: 'OP-01', note: null, from_status: 'new', to_status: 'acknowledged' },
+        { action: 'escalate', at: ago(93), operator_id: 'OP-01', note: 'Security dispatched.', from_status: 'acknowledged', to_status: 'escalated' },
+        { action: 'resolve', at: ago(80), operator_id: 'OP-01', note: 'Both parties separated by staff. Incident report filed.', from_status: 'escalated', to_status: 'resolved' },
+      ],
+    },
+
+    // ---------- older, already-reviewed items for Event History ----------
+    {
+      event_id: 'evt-c1-0011',
+      component_id: 'component_1',
+      incident_type: 'restricted_zone_intrusion',
+      camera_id: 'clip_05',
+      timestamp_detected: ago(130),
+      priority: 'medium',
+      status: 'resolved',
+      summary: 'Possible restricted-zone entry at the service door.',
+      evidence: [
+        { name: 'zone_dwell', value: 18, unit: 'seconds' },
+        { name: 'entry_direction', value: 'inbound', unit: null },
+      ],
+      bounding_box: null,
+      track_id: 'person-02',
+      media_ref: null,
+      media_offset_seconds: null,
+      confidence: 0.63,
+      score_calibrated: false,
+      zone_id: 'service_entrance',
+      model_name: 'spatial_rel_gnn',
+      model_version: '0.1',
+      audit: [
+        { action: 'acknowledge', at: ago(128), operator_id: 'OP-02', note: null, from_status: 'new', to_status: 'acknowledged' },
+        { action: 'resolve', at: ago(120), operator_id: 'OP-02', note: 'Cleaning contractor, badge checked on arrival log.', from_status: 'acknowledged', to_status: 'resolved' },
+      ],
+    },
+    {
+      event_id: 'evt-c4-0004',
+      component_id: 'component_4',
+      incident_type: 'fall',
+      camera_id: 'clip_04',
+      timestamp_detected: ago(155),
+      priority: 'high',
+      status: 'false_positive',
+      summary: 'Potential fall — review required.',
+      evidence: [
+        { name: 'downward_motion', value: 0.61, unit: null },
+        { name: 'posture_aspect_ratio', value: 0.9, unit: null, description: 'Still taller than wide — a crouch, not a horizontal posture.' },
+        { name: 'low_posture_duration', value: 1.9, unit: 'seconds', description: 'Brief. A real fall usually holds the low posture far longer.' },
+        { name: 'post_fall_movement', value: 0.72, unit: null, description: 'High movement after landing — the person got up quickly.' },
+      ],
+      bounding_box: { x_min: 0.44, y_min: 0.5, x_max: 0.7, y_max: 0.9 },
+      track_id: 'person-05',
+      media_ref: 'clips/clip_04.mp4',
+      media_offset_seconds: 3.0,
+      confidence: 0.58,
+      score_calibrated: false,
+      zone_id: 'waiting_area',
+      model_name: 'fall_cnn_lstm',
+      model_version: '0.1',
+      audit: [
+        {
+          action: 'false_alarm',
+          at: ago(150),
+          operator_id: 'OP-01',
+          note: 'Person crouched to pick up a dropped item, then stood. Good candidate for the hard-negative set.',
+          from_status: 'new',
+          to_status: 'false_positive',
+        },
+      ],
+    },
+  ];
+
+  return events;
+}

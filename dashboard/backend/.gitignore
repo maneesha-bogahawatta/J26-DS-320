@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# Videos sent to /api/v1/detect/video are saved here. Never commit them.
+uploads/
+events_store.json
