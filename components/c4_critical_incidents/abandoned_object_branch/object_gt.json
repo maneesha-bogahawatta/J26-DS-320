@@ -1,0 +1,79 @@
+{
+  "_note": "PROVISIONAL ground truth read by eye from 3x crops (see verify/). Times +-2 s, positions in 384x288 frame coords. Confirm in CVAT before quoting in the report. owner_gone = owner leaves the bag's neighbourhood; owner_returns = the bag is picked up / owner comes back (None = never within the clip). owner_returns = the owner comes back inside the bag's neighbourhood (or takes it). PickedUp was corrected from 'owner stays near' after viewing a radius-overlay crop.",
+  "scenarios": {
+    "LeftBag": {
+      "video": "LeftBag.mpg",
+      "dataset": "CAVIAR",
+      "xy": [
+        308,
+        109
+      ],
+      "place": 37.8,
+      "owner_gone": 40.0,
+      "owner_returns": 54.0,
+      "verified": "crops",
+      "note": "backpack set down, owner (teal jacket) walks away, comes back ~54 s and takes it"
+    },
+    "LeftBag_AtChair": {
+      "video": "LeftBag_AtChair.mpg",
+      "dataset": "CAVIAR",
+      "xy": [
+        73,
+        119
+      ],
+      "place": 19.5,
+      "owner_gone": 22.0,
+      "owner_returns": 37.0,
+      "verified": "crops",
+      "note": "bag left on an armchair; owner returns ~36 s and takes it"
+    },
+    "LeftBag_BehindChair": {
+      "video": "LeftBag_BehindChair.mpg",
+      "dataset": "CAVIAR",
+      "xy": [
+        85,
+        125
+      ],
+      "place": 17.0,
+      "owner_gone": 22.0,
+      "owner_returns": null,
+      "verified": "weak (dark bag, mostly hidden behind the chair, +-3 s)",
+      "note": "dark bag hidden behind chair, owner leaves and never returns"
+    },
+    "LeftBag_PickedUp": {
+      "video": "LeftBag_PickedUp.mpg",
+      "dataset": "CAVIAR",
+      "xy": [
+        220,
+        36
+      ],
+      "place": 20.0,
+      "owner_gone": 33.0,
+      "owner_returns": 37.5,
+      "verified": "crops (verify/PickedUp_owner_distance.jpg)",
+      "note": "bag set down against wall; owner is outside the 61 px radius ~31-37 s, walks back in at ~38 s and picks it up ~41 s. Short absence: alert only for a short timer (T<=~4 s)"
+    },
+    "LeftBox": {
+      "video": "LeftBox.mpg",
+      "dataset": "CAVIAR",
+      "xy": [
+        147,
+        159
+      ],
+      "place": 22.5,
+      "owner_gone": 29.0,
+      "owner_returns": null,
+      "verified": "crops",
+      "note": "box carried in and set down, owner leaves ~29 s, clip ends 34.4 s"
+    }
+  },
+  "unused_clips": {
+    "grocery_theft.mp4": "shoplifting, not an abandoned object (use only as an out-of-scope negative)",
+    "aitoe_unattended.mp4": "vendor demo: detector boxes and captions already burnt in; mask or skip",
+    "videoplayback.mp4": "vendor demo (ObjectVideo overlay boxes burnt in); skip for scoring",
+    "videoplayback1.mp4": "vendor demo (ObjectVideo overlay boxes burnt in); skip for scoring",
+    "airport_unattended.mp4": "handheld phone video, moving camera: background model does not apply; needs a detector-based pipeline (COCO handbag/suitcase + tracker)",
+    "cctv_unattended.mp4": "fixed camera but the bag is set down in the first 4 s (no empty-scene window to learn a background) and has a caption overlay; needs a pre-roll or a detector-based start",
+    "tiktok_7252.mp4": "multi-scene edit with captions, blurred letterbox bars and a final cut to a night-vision close-up; qualitative only"
+  }
+}

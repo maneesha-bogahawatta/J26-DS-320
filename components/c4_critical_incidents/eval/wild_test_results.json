@@ -1,0 +1,890 @@
+{
+  "window_s": 6.0,
+  "step_s": 1.0,
+  "results": {
+    "gmdcsa_6f_ensemble@0.4/wild": {
+      "summary": {
+        "model": "gmdcsa_6f_ensemble",
+        "thr": 0.4,
+        "domains": [
+          "wild"
+        ],
+        "falls": 9,
+        "detected": 8,
+        "recall": 0.889,
+        "precision": 0.571,
+        "f1": 0.696,
+        "false_alarms": 6,
+        "false_alarms_on_fall_like": 3,
+        "false_alarms_per_hour": 124.7,
+        "latency_mean_s": 3.98
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8234836459159851
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.8365009427070618
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8385574221611023
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.8347578048706055
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 0,
+          "alerts": 0,
+          "max_p_in_fall": 0.32948559522628784
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7738032341003418
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.4887436330318451
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.8292986750602722
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.6529554724693298
+        }
+      ]
+    },
+    "gmdcsa_6f_ensemble@0.4/staged": {
+      "summary": {
+        "model": "gmdcsa_6f_ensemble",
+        "thr": 0.4,
+        "domains": [
+          "staged"
+        ],
+        "falls": 2,
+        "detected": 2,
+        "recall": 1.0,
+        "precision": 0.5,
+        "f1": 0.667,
+        "false_alarms": 2,
+        "false_alarms_on_fall_like": 0,
+        "false_alarms_per_hour": 127.2,
+        "latency_mean_s": 5.5
+      },
+      "per_clip": [
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 8,
+          "max_p_in_fall": 0.8316027522087097
+        }
+      ]
+    },
+    "gmdcsa_6f_ensemble@0.4/all": {
+      "summary": {
+        "model": "gmdcsa_6f_ensemble",
+        "thr": 0.4,
+        "domains": [
+          "wild",
+          "staged"
+        ],
+        "falls": 11,
+        "detected": 10,
+        "recall": 0.909,
+        "precision": 0.556,
+        "f1": 0.69,
+        "false_alarms": 8,
+        "false_alarms_on_fall_like": 3,
+        "false_alarms_per_hour": 125.3,
+        "latency_mean_s": 4.28
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8234836459159851
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.8365009427070618
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8385574221611023
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.8347578048706055
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 0,
+          "alerts": 0,
+          "max_p_in_fall": 0.32948559522628784
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7738032341003418
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.4887436330318451
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.8292986750602722
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.6529554724693298
+        },
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 8,
+          "max_p_in_fall": 0.8316027522087097
+        }
+      ]
+    },
+    "gmdcsa_6f_ensemble@0.5/wild": {
+      "summary": {
+        "model": "gmdcsa_6f_ensemble",
+        "thr": 0.5,
+        "domains": [
+          "wild"
+        ],
+        "falls": 9,
+        "detected": 7,
+        "recall": 0.778,
+        "precision": 0.636,
+        "f1": 0.7,
+        "false_alarms": 4,
+        "false_alarms_on_fall_like": 2,
+        "false_alarms_per_hour": 83.1,
+        "latency_mean_s": 4.04
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8234836459159851
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.8365009427070618
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8385574221611023
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 3,
+          "max_p_in_fall": 0.8347578048706055
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 0,
+          "alerts": 0,
+          "max_p_in_fall": 0.32948559522628784
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7738032341003418
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 0,
+          "alerts": 0,
+          "max_p_in_fall": 0.4887436330318451
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8292986750602722
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.6529554724693298
+        }
+      ]
+    },
+    "gmdcsa_6f_ensemble@0.5/staged": {
+      "summary": {
+        "model": "gmdcsa_6f_ensemble",
+        "thr": 0.5,
+        "domains": [
+          "staged"
+        ],
+        "falls": 2,
+        "detected": 2,
+        "recall": 1.0,
+        "precision": 0.667,
+        "f1": 0.8,
+        "false_alarms": 1,
+        "false_alarms_on_fall_like": 0,
+        "false_alarms_per_hour": 63.6,
+        "latency_mean_s": 5.5
+      },
+      "per_clip": [
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 7,
+          "max_p_in_fall": 0.8316027522087097
+        }
+      ]
+    },
+    "gmdcsa_6f_ensemble@0.5/all": {
+      "summary": {
+        "model": "gmdcsa_6f_ensemble",
+        "thr": 0.5,
+        "domains": [
+          "wild",
+          "staged"
+        ],
+        "falls": 11,
+        "detected": 9,
+        "recall": 0.818,
+        "precision": 0.643,
+        "f1": 0.72,
+        "false_alarms": 5,
+        "false_alarms_on_fall_like": 2,
+        "false_alarms_per_hour": 78.3,
+        "latency_mean_s": 4.37
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8234836459159851
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.8365009427070618
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8385574221611023
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 3,
+          "max_p_in_fall": 0.8347578048706055
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 0,
+          "alerts": 0,
+          "max_p_in_fall": 0.32948559522628784
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7738032341003418
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 0,
+          "alerts": 0,
+          "max_p_in_fall": 0.4887436330318451
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8292986750602722
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.6529554724693298
+        },
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 7,
+          "max_p_in_fall": 0.8316027522087097
+        }
+      ]
+    },
+    "combined_v2@0.4/wild": {
+      "summary": {
+        "model": "combined_v2",
+        "thr": 0.4,
+        "domains": [
+          "wild"
+        ],
+        "falls": 9,
+        "detected": 9,
+        "recall": 1.0,
+        "precision": 0.643,
+        "f1": 0.783,
+        "false_alarms": 5,
+        "false_alarms_on_fall_like": 2,
+        "false_alarms_per_hour": 103.9,
+        "latency_mean_s": 3.87
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8287466764450073
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.9152483344078064
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.9104688167572021
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 3,
+          "max_p_in_fall": 0.8870056867599487
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5418254733085632
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7040277719497681
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5449493527412415
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.8440017104148865
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.505317747592926
+        }
+      ]
+    },
+    "combined_v2@0.4/staged": {
+      "summary": {
+        "model": "combined_v2",
+        "thr": 0.4,
+        "domains": [
+          "staged"
+        ],
+        "falls": 2,
+        "detected": 2,
+        "recall": 1.0,
+        "precision": 0.5,
+        "f1": 0.667,
+        "false_alarms": 2,
+        "false_alarms_on_fall_like": 0,
+        "false_alarms_per_hour": 127.2,
+        "latency_mean_s": 5.5
+      },
+      "per_clip": [
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 8,
+          "max_p_in_fall": 0.8629431128501892
+        }
+      ]
+    },
+    "combined_v2@0.4/all": {
+      "summary": {
+        "model": "combined_v2",
+        "thr": 0.4,
+        "domains": [
+          "wild",
+          "staged"
+        ],
+        "falls": 11,
+        "detected": 11,
+        "recall": 1.0,
+        "precision": 0.611,
+        "f1": 0.759,
+        "false_alarms": 7,
+        "false_alarms_on_fall_like": 2,
+        "false_alarms_per_hour": 109.7,
+        "latency_mean_s": 4.16
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8287466764450073
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.9152483344078064
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.9104688167572021
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 3,
+          "max_p_in_fall": 0.8870056867599487
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5418254733085632
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7040277719497681
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5449493527412415
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.8440017104148865
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.505317747592926
+        },
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 8,
+          "max_p_in_fall": 0.8629431128501892
+        }
+      ]
+    },
+    "combined_v2@0.5/wild": {
+      "summary": {
+        "model": "combined_v2",
+        "thr": 0.5,
+        "domains": [
+          "wild"
+        ],
+        "falls": 9,
+        "detected": 9,
+        "recall": 1.0,
+        "precision": 0.643,
+        "f1": 0.783,
+        "false_alarms": 5,
+        "false_alarms_on_fall_like": 3,
+        "false_alarms_per_hour": 103.9,
+        "latency_mean_s": 3.87
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8287466764450073
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.9152483344078064
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.9104688167572021
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8870056867599487
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5418254733085632
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7040277719497681
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5449493527412415
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8440017104148865
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.505317747592926
+        }
+      ]
+    },
+    "combined_v2@0.5/staged": {
+      "summary": {
+        "model": "combined_v2",
+        "thr": 0.5,
+        "domains": [
+          "staged"
+        ],
+        "falls": 2,
+        "detected": 2,
+        "recall": 1.0,
+        "precision": 0.5,
+        "f1": 0.667,
+        "false_alarms": 2,
+        "false_alarms_on_fall_like": 0,
+        "false_alarms_per_hour": 127.2,
+        "latency_mean_s": 5.5
+      },
+      "per_clip": [
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 8,
+          "max_p_in_fall": 0.8629431128501892
+        }
+      ]
+    },
+    "combined_v2@0.5/all": {
+      "summary": {
+        "model": "combined_v2",
+        "thr": 0.5,
+        "domains": [
+          "wild",
+          "staged"
+        ],
+        "falls": 11,
+        "detected": 11,
+        "recall": 1.0,
+        "precision": 0.611,
+        "f1": 0.759,
+        "false_alarms": 7,
+        "false_alarms_on_fall_like": 3,
+        "false_alarms_per_hour": 109.7,
+        "latency_mean_s": 4.16
+      },
+      "per_clip": [
+        {
+          "cam": "cam01",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.8287466764450073
+        },
+        {
+          "cam": "cam02",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 2,
+          "max_p_in_fall": 0.9152483344078064
+        },
+        {
+          "cam": "cam03",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 5,
+          "max_p_in_fall": 0.9104688167572021
+        },
+        {
+          "cam": "cam04",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8870056867599487
+        },
+        {
+          "cam": "cam05",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5418254733085632
+        },
+        {
+          "cam": "cam06",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.7040277719497681
+        },
+        {
+          "cam": "cam07",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.5449493527412415
+        },
+        {
+          "cam": "cam09",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 4,
+          "max_p_in_fall": 0.8440017104148865
+        },
+        {
+          "cam": "cam10",
+          "domain": "wild",
+          "falls": 1,
+          "detected": 1,
+          "alerts": 1,
+          "max_p_in_fall": 0.505317747592926
+        },
+        {
+          "cam": "cam11",
+          "domain": "staged",
+          "falls": 2,
+          "detected": 2,
+          "alerts": 8,
+          "max_p_in_fall": 0.8629431128501892
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,107 @@
+/**
+ * Design tokens — J26-DS-320 security alerts console.
+ *
+ * Change colours, spacing and type HERE, never inside component CSS.
+ *
+ * ---------------------------------------------------------------------------
+ * The colour system
+ * ---------------------------------------------------------------------------
+ * Colour carries ONE meaning in this interface: how urgent something is, and
+ * whether it has been dealt with. Nothing else is coloured. That is what lets
+ * an officer read the screen from across a control room without reading any
+ * words at all.
+ *
+ *     RED     needs attention now
+ *     AMBER   needs attention soon
+ *     BLUE    look when you can
+ *     GREEN   dealt with
+ *     GREY    nothing wrong / closed
+ *
+ * The colours are saturated on purpose. A muted "professional" palette is
+ * unreadable at a glance in a dim room on a cheap monitor, which is the actual
+ * viewing condition this has to survive.
+ *
+ * Accessibility: colour is never the ONLY signal. Every card also carries the
+ * urgency as a word, and every status as a word. An officer with colour-vision
+ * deficiency loses the glance but loses no information.
+ */
+
+:root {
+  /* Single-theme by choice: control rooms are dim, and a light interface on a
+     wall-mounted monitor washes out. This tells the browser to match. */
+  color-scheme: dark;
+
+  /* ---- surfaces ---- */
+  --bg-0: #0d1218; /* page */
+  --bg-1: #141b24; /* cards, panels */
+  --bg-2: #1b2430; /* raised / hover */
+  --bg-3: #24303e; /* pressed */
+  --bg-inset: #080c11; /* video letterbox */
+
+  --line: #243040;
+  --line-strong: #35445a;
+
+  --text-1: #eef3f8; /* primary */
+  --text-2: #a7b8ca; /* secondary */
+  --text-3: #71859b; /* tertiary, hints */
+
+  /* ---- urgency: the only colours with meaning ---- */
+  --now: #ff5a52; /* needs attention now */
+  --now-soft: rgba(255, 90, 82, 0.16);
+  --now-edge: rgba(255, 90, 82, 0.5);
+
+  --soon: #ffa72b; /* needs attention soon */
+  --soon-soft: rgba(255, 167, 43, 0.15);
+  --soon-edge: rgba(255, 167, 43, 0.45);
+
+  --later: #42b6f5; /* look when you can */
+  --later-soft: rgba(66, 182, 245, 0.14);
+  --later-edge: rgba(66, 182, 245, 0.42);
+
+  --done: #43c47a; /* dealt with */
+  --done-soft: rgba(67, 196, 122, 0.14);
+  --done-edge: rgba(67, 196, 122, 0.42);
+
+  --closed: #6b7c91; /* nothing wrong */
+  --closed-soft: rgba(107, 124, 145, 0.14);
+  --closed-edge: rgba(107, 124, 145, 0.4);
+
+  /* The interface accent, used only for focus rings and the active tab. */
+  --accent: #42b6f5;
+
+  /* ---- type ----
+     Sized for someone glancing at a monitor from a metre away, at the end of
+     a night shift. Deliberately larger than a normal dashboard. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --fs-micro: 0.8125rem; /* 13px — technical panel only */
+  --fs-small: 0.9375rem; /* 15px — secondary text */
+  --fs-base: 1rem; /* 16px — body */
+  --fs-lg: 1.1875rem; /* 19px — card titles */
+  --fs-xl: 1.5rem; /* 24px — screen titles */
+  --fs-xxl: 2.25rem; /* 36px — the count that matters */
+
+  /* ---- spacing ---- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 14px;
+
+  /* ---- layout ---- */
+  --header-h: 72px;
+  --list-w: 400px;
+  /* Nothing clickable is smaller than this. A misclick here dismisses a real
+     incident, so the targets are generous. */
+  --touch: 52px;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
