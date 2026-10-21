@@ -4,55 +4,13 @@ Detection endpoints — where each component's trained model plugs in.
 The dashboard's "Check video" screen (with VITE_DETECT_MODE=http) sends:
 
     POST /api/v1/detect/video?source_id=upload-lobby&filename=lobby.mp4
-         body: the raw video file
+        body: the raw video file
     POST /api/v1/detect/frame?source_id=live-camera&t=12.50
-         body: one JPEG from the live camera (about one per second)
+        body: one JPEG from the live camera (about one per second)
 
 Both reply with the same shape:
 
-    { "events": [IncidentEvent, ...], "detectors_run": ["c4_fall", ...] }
-
-Every event returned is also stored, so it appears in Alerts and the shift log.
-
----------------------------------------------------------------------------
-HOW TO PLUG IN YOUR MODEL (Members 1-4)
----------------------------------------------------------------------------
-
-Write a function that takes the video path (or the JPEG bytes) and returns a
-list of IncidentEvent, then register it with the decorator. That is all.
-
-    # backend_mock/detectors/c4_fall.py
-    from detect import video_detector
-    from schemas import IncidentEvent
-
-    @video_detector("c4_fall")
-    def detect_falls(video_path, source_id):
-        events = []
-        for hit in my_model.run(video_path):          # your pipeline
-            events.append(IncidentEvent(
-                event_id=f"component_4-{uuid4().hex[:8]}",
-                component_id="component_4",
-                incident_type="fall",
-                camera_id=source_id,
-                timestamp_detected=utc_now_iso(),
-                priority="high",
-                status="new",
-                summary="Potential fall — review required",
-                evidence=[...],
-                model_name="c4-fall-stgcn", model_version="0.3.0",
-                bounding_box=hit.box_normalised,
-                media_offset_seconds=hit.seconds,      # so the dashboard jumps there
-                ...
-            ))
-        return events
-
-Any .py file in backend_mock/detectors/ is imported at start-up, so dropping
-your file there is enough — no change to this file or to main.py.
-
-Rules: keep the event contract (docs/EVENT_CONTRACT.md); never put a name or
-identity in track_id; send media_offset_seconds for uploads so the dashboard
-can jump to the moment. If your model is slow, that is fine for uploads; for
-live frames, aim to answer in well under a second or skip frames.
+    { "events": [IncidentEvent, ...], "detectors_run": ["c1_spatial", ...] }
 """
 
 from __future__ import annotations
@@ -77,7 +35,7 @@ log = logging.getLogger("detect")
 HERE = Path(__file__).parent
 UPLOAD_DIR = HERE / "uploads"
 MAX_VIDEO_BYTES = 500 * 1024 * 1024  # 500 MB
-MAX_FRAME_BYTES = 8 * 1024 * 1024
+MAX_FRAME_BYTES = 8 * 1024 * 1024    # 8 MB
 
 VideoDetector = Callable[[Path, str], list[IncidentEvent]]
 FrameDetector = Callable[[bytes, str, float], list[IncidentEvent]]
@@ -107,7 +65,7 @@ def frame_detector(name: str) -> Callable[[FrameDetector], FrameDetector]:
 
 
 def load_detectors() -> None:
-    """Import every module in backend_mock/detectors/ so their decorators run."""
+    """Import every module in backend/detectors/ so their decorators run."""
     package_dir = HERE / "detectors"
     if not package_dir.is_dir():
         return
@@ -162,11 +120,7 @@ def build_router(store: EventStore) -> APIRouter:
         source_id: str = Query(default="upload", max_length=64),
         filename: str = Query(default="video.mp4", max_length=200),
     ) -> DetectResponse:
-        """
-        Check an uploaded video with every registered video detector.
-
-        Send the raw file as the request body (not multipart).
-        """
+        """Check an uploaded video with every registered video detector."""
         UPLOAD_DIR.mkdir(exist_ok=True)
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(filename).name)[-80:] or "video.mp4"
         path = UPLOAD_DIR / f"{uuid.uuid4().hex[:8]}_{safe}"
@@ -193,10 +147,8 @@ def build_router(store: EventStore) -> APIRouter:
 
         note = None
         if not VIDEO_DETECTORS:
-            note = (
-                "No video detectors are registered yet, so nothing was checked. "
-                "Add one in backend_mock/detectors/ — see detect.py."
-            )
+            note = "No video detectors are registered yet, so nothing was checked."
+
         return DetectResponse(events=_store_all(store, events), detectors_run=sorted(VIDEO_DETECTORS), note=note)
 
     @router.post("/frame", response_model=DetectResponse)

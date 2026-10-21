@@ -41,7 +41,7 @@ from detect import build_router, load_detectors
 API_VERSION = "1.1.0"
 
 app = FastAPI(
-    title="J26-DS-320 Alerting API (mock)",
+    title="Security Alerts API",
     version=API_VERSION,
     description=(
         "Shared incident-event API for the Proactive Anomaly Detection and Security "
@@ -55,16 +55,9 @@ app = FastAPI(
 # API without a proxy. Tighten this before the system ever leaves a laptop.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-    ],
-    # `npm run dev:phone` serves the dashboard over https on the Wi-Fi network
-    # (e.g. https://192.168.1.20:5173) so a phone can use its camera.
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?",
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
