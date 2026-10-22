@@ -2489,3 +2489,4 @@ textarea {
 /* Model status and pose coverage in the shared Recorded video result. */
 .c3-notice{border:1px solid var(--soon-edge);background:var(--soon-soft);border-radius:var(--radius);padding:var(--sp-4);margin-bottom:var(--sp-5)}
 .c3-notice strong{color:var(--soon)}.c3-notice p{margin:var(--sp-2) 0 0;color:var(--text-2);line-height:1.6}
+.c3-playback-options{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-bottom:var(--sp-3)}

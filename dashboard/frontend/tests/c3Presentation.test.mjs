@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { booleanEvidence, finiteScore, headDiagnostics, mediaOffset, scoreSegments } from '../src/lib/c3Presentation.ts';
+import { annotatedContext, booleanEvidence, finiteScore, headDiagnostics, mediaOffset, scoreSegments } from '../src/lib/c3Presentation.ts';
+
+test('completed rendering is playable even without any violence candidate or usable scores', () => {
+  const job = { status: 'completed', files: ['demo.mp4', 'scores.csv'], events: [],
+    prediction: { source_context: [13.4, 21.4], timing: { valid_decisions: 0, decisions: 40 } } };
+  assert.deepEqual(annotatedContext(job), { start: 13.4, end: 21.4 });
+  assert.ok(Math.abs(mediaOffset(17.8, annotatedContext(job).start) - 4.4) < 1e-8);
+});
+
+test('failed, pending or missing rendered artifacts never replace the original upload', () => {
+  const job = { status: 'completed', files: ['demo.mp4'], prediction: { source_context: [0, 8] } };
+  for (const status of ['failed', 'running', 'queued', 'interrupted']) assert.equal(annotatedContext({ ...job, status }), null);
+  assert.equal(annotatedContext({ ...job, files: ['scores.csv'] }), null);
+  assert.equal(annotatedContext(undefined), null);
+  for (const range of [[0, 0], [3, 2], [-1, 3], [0, NaN], [0, Infinity]]) {
+    assert.equal(annotatedContext({ ...job, prediction: { source_context: range } }), null);
+  }
+});
 
 test('missing or invalid model score remains absent instead of becoming zero', () => {
   for (const value of [null, undefined, '', 'NaN', Infinity, -0.1, 1.1]) assert.equal(finiteScore(value), null);

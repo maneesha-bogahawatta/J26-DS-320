@@ -10,6 +10,8 @@ import { videoClock } from '../../lib/geometry';
 
 interface TimelineProps {
   duration: number;
+  /** Original-video start of a rendered excerpt; ordinary uploads start at zero. */
+  startSeconds?: number;
   current: number;
   found: Found[];
   selectedId: string | null;
@@ -17,9 +19,9 @@ interface TimelineProps {
   onSeek: (t: number) => void;
 }
 
-export function Timeline({ duration, current, found, selectedId, onPick, onSeek }: TimelineProps) {
+export function Timeline({ duration, startSeconds = 0, current, found, selectedId, onPick, onSeek }: TimelineProps) {
   if (!duration) return null;
-  const pct = (t: number) => `${Math.min(100, Math.max(0, (t / duration) * 100))}%`;
+  const pct = (t: number) => `${Math.min(100, Math.max(0, ((t - startSeconds) / duration) * 100))}%`;
 
   return (
     <div className="timeline">
@@ -27,14 +29,14 @@ export function Timeline({ duration, current, found, selectedId, onPick, onSeek 
         className="timeline__track"
         onClick={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
-          onSeek(((e.clientX - r.left) / r.width) * duration);
+          onSeek(startSeconds + ((e.clientX - r.left) / r.width) * duration);
         }}
         role="presentation"
       >
         <span className="timeline__played" style={{ width: pct(current) }} />
-        {found.map((f) => {
+        {found.filter(f => f.endSeconds >= startSeconds && f.startSeconds <= startSeconds + duration).map((f) => {
           const meta = describeIncident(f.event.incident_type, f.event.component_id);
-          const width = Math.max(1.2, ((f.endSeconds - f.startSeconds) / duration) * 100);
+          const width = Math.max(1.2, ((Math.min(f.endSeconds, startSeconds + duration) - Math.max(f.startSeconds, startSeconds)) / duration) * 100);
           return (
             <button
               key={f.event.event_id}
@@ -56,7 +58,7 @@ export function Timeline({ duration, current, found, selectedId, onPick, onSeek 
       </div>
       <div className="timeline__clock">
         <span className="mono">{videoClock(current)}</span>
-        <span className="mono">{videoClock(duration)}</span>
+        <span className="mono">{videoClock(startSeconds + duration)}</span>
       </div>
     </div>
   );

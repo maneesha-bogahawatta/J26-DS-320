@@ -33,6 +33,7 @@ import { C3ModelStatus } from './C3ModelStatus';
 import { C3RecordedResults } from './C3RecordedResults';
 import { C3ScoreGraph } from './C3ScoreGraph';
 import type { C3Job } from '../../api/c3Client';
+import { annotatedContext, mediaOffset } from '../../lib/c3Presentation';
 
 type Phase = 'choose' | 'checking' | 'done' | 'error';
 
@@ -55,10 +56,19 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
   const [dragging, setDragging] = useState(false);
   const [report, setReport] = useState<VideoCheckReport | null>(null);
   const [recorded, setRecorded] = useState<C3Job | null>(null);
+  const [showAnnotated, setShowAnnotated] = useState(true);
+  const [failedMedia, setFailedMedia] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const pendingSourceSeek = useRef<number | null>(null);
+  const completedJob = report?.c3?.status === 'completed' ? report.c3.job : undefined;
+  const context = annotatedContext(completedJob);
+  const annotated = phase === 'done' && context !== null && (showAnnotated || recorded !== null);
+  const sourceStart = annotated ? context!.start : 0;
+  const sourceCurrent = current + sourceStart;
+  const playbackUrl = annotated ? c3MediaUrl(completedJob!.job_id) : url;
 
   // Cancel a running check if the screen goes away.
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -84,16 +94,21 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
       setError(null);
       setReport(null);
       setRecorded(null);
+      setShowAnnotated(true);
+      setFailedMedia(null);
+      pendingSourceSeek.current = null;
       setCurrent(0);
+      setDuration(0);
       setProgress({ fraction: 0, stage: 'Opening the video' });
       setPhase('checking');
 
       try {
+        const completion: { report: VideoCheckReport | null } = { report: null };
         const result = await detector.analyzeVideo(chosen, {
           sourceId,
           mediaUrl: localUrl,
           onProgress: setProgress,
-          onReport: setReport,
+          onReport: value => { completion.report = value; setReport(value); },
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
@@ -104,7 +119,17 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
           result.map((f) => f.event),
           { id: sourceId, label: `Uploaded — ${chosen.name}` },
         );
-        if (result[0] && videoRef.current) videoRef.current.currentTime = result[0].startSeconds;
+        // Changing to the rendered artifact reloads media metadata. Seek only
+        // after it is loaded; candidate timestamps remain in source-video time.
+        if (result[0]) {
+          const range = annotatedContext(completion.report?.c3?.job);
+          const firstTime = result[0].startSeconds;
+          if (range && firstTime >= range.start && firstTime <= range.end) pendingSourceSeek.current = firstTime;
+          else {
+            if (range) setShowAnnotated(false);
+            if (videoRef.current) videoRef.current.currentTime = firstTime;
+          }
+        }
       } catch (err) {
         if (err instanceof Cancelled || controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : 'Something went wrong while checking the video.');
@@ -125,24 +150,52 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
     setSelectedId(null);
     setError(null);
     setRecorded(null);
+    setReport(null);
+    setCurrent(0);
+    setDuration(0);
+    setFailedMedia(null);
+    pendingSourceSeek.current = null;
   }, [url, found.length]);
-
-  const pick = useCallback((f: Found) => {
-    setSelectedId(f.event.event_id);
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-      video.currentTime = f.startSeconds;
-    }
-  }, []);
 
   const seek = useCallback((t: number) => {
     const video = videoRef.current;
-    if (video) video.currentTime = t;
-  }, []);
+    if (annotated && context && (t < context.start || t > context.end) && !recorded) {
+      // A teammate's event may be outside the C3 excerpt. Keep it available
+      // on its original upload instead of drawing it at a false excerpt time.
+      pendingSourceSeek.current = t;
+      setShowAnnotated(false);
+      return;
+    }
+    if (video) {
+      video.pause();
+      const offset = mediaOffset(t, sourceStart);
+      if (video.readyState >= 1) video.currentTime = Math.min(video.duration || offset, offset);
+      else pendingSourceSeek.current = t;
+    }
+  }, [annotated, context, recorded, sourceStart]);
+
+  const pick = useCallback((f: Found) => {
+    setSelectedId(f.event.event_id);
+    seek(f.startSeconds);
+  }, [seek]);
+
+  const switchVideo = (nextAnnotated: boolean) => {
+    if (nextAnnotated === annotated) return;
+    pendingSourceSeek.current = sourceCurrent;
+    setShowAnnotated(nextAnnotated);
+  };
+
+  const mediaLoaded = (seconds: number) => {
+    setDuration(seconds);
+    const video = videoRef.current;
+    if (video && video.readyState >= 1 && pendingSourceSeek.current !== null) {
+      video.currentTime = Math.min(seconds, mediaOffset(pendingSourceSeek.current, sourceStart));
+      pendingSourceSeek.current = null;
+    }
+  };
 
   const boxes: StageBox[] = useMemo(() => {
-    if (phase !== 'done') return [];
+    if (phase !== 'done' || annotated) return [];
     const out: StageBox[] = [];
     for (const f of found) {
       const box = boxAt(f, current);
@@ -155,17 +208,16 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
       });
     }
     return out;
-  }, [found, current, phase]);
+  }, [found, current, phase, annotated]);
 
   const selected = found.find((f) => f.event.event_id === selectedId) ?? null;
   const openRecorded = (job: C3Job) => {
     const sourceStart = job.prediction?.source_context[0] ?? 0;
-    const items = (job.events ?? []).map(event => ({ ...c3Found(event, sourceStart),
-      startSeconds: Math.max(0, c3Found(event, sourceStart).startSeconds - sourceStart),
-      endSeconds: Math.max(0, c3Found(event, sourceStart).endSeconds - sourceStart) }));
+    const items = (job.events ?? []).map(event => c3Found(event, sourceStart));
     setRecorded(job); setFile(null); setUrl(c3MediaUrl(job.job_id)); setFound(items);
     setReport({ team: { status: 'completed', detectors: [] }, c3: { status: 'completed', job } });
     setSelectedId(items[0]?.event.event_id ?? null); setCurrent(0); setPhase('done');
+    setShowAnnotated(true); setFailedMedia(null); setDuration(0); pendingSourceSeek.current = null;
   };
 
   /* ------------------------------------------------------------ step 1 */
@@ -236,18 +288,29 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
           </button>
         </div>
 
+        {phase === 'done' && context ? <div className="c3-playback-options" role="group" aria-label="Video view">
+          <button type="button" className={`btn btn--small${annotated ? ' btn--primary' : ''}`}
+            aria-pressed={annotated} onClick={() => switchVideo(true)}>Skeleton video</button>
+          {!recorded ? <button type="button" className={`btn btn--small${!annotated ? ' btn--primary' : ''}`}
+            aria-pressed={!annotated} onClick={() => switchVideo(false)}>Original video</button> : null}
+        </div> : null}
         <DetectStage
           videoRef={videoRef}
-          src={url}
+          src={playbackUrl}
           boxes={boxes}
           controls={phase === 'done'}
           onTimeUpdate={setCurrent}
-          onDuration={setDuration}
+          onDuration={mediaLoaded}
+          onError={() => setFailedMedia(playbackUrl)}
         />
+        {annotated ? <p className="muted-note">Skeleton overlay: green = observed joints; hollow amber = estimated joints; missing joints are not drawn. Low pose quality can prevent model scoring. Original-video range: {context!.start.toFixed(2)}–{context!.end.toFixed(2)} seconds.</p> : null}
+        {playbackUrl && failedMedia === playbackUrl ? <p className="upload__error" role="alert">
+          {annotated ? 'The annotated video could not be played. Use the Annotated video link below or switch to Original video.' : 'The original video could not be played.'}
+        </p> : null}
         {recorded ? <div className="c3-notice"><strong>Recorded inference replay</strong>
           <p>Displaying authentic output computed at {recorded.created_at}. No new inference runs during replay.</p>
         </div> : null}
-        {report?.c3?.job ? <C3ScoreGraph job={report.c3.job} onSeek={t => seek(recorded ? t - (recorded.prediction?.source_context[0] ?? 0) : t)} /> : null}
+        {report?.c3?.job ? <C3ScoreGraph job={report.c3.job} onSeek={seek} /> : null}
 
         {phase === 'checking' ? (
           <div className="progress" role="status" aria-live="polite">
@@ -265,7 +328,8 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
         {phase === 'done' ? (
           <Timeline
             duration={duration}
-            current={current}
+            startSeconds={sourceStart}
+            current={sourceCurrent}
             found={found}
             selectedId={selectedId}
             onPick={pick}
@@ -295,6 +359,9 @@ export function UploadCheck({ onFound, onOpenAlert }: UploadCheckProps) {
           {report.c3 ? <>
             <p><strong>C3 violence research: {report.c3.status === 'completed' ? 'completed' : 'incomplete'}</strong></p>
             {report.c3.error ? <p role="alert">{report.c3.error}</p> : null}
+            {report.c3.status === 'failed' ? <p>No skeleton video was generated for this failed check.
+              {report.c3.job ? <> <a href={c3MediaUrl(report.c3.job.job_id, 'inference.log')}>View inference error</a></> : null}
+            </p> : null}
             {report.c3.job?.prediction ? <>
               <p>Checked original-video seconds {report.c3.job.prediction.source_context[0].toFixed(2)}–{report.c3.job.prediction.source_context[1].toFixed(2)}. Usable pose decisions: {report.c3.job.prediction.timing.valid_decisions} / {report.c3.job.prediction.timing.decisions}.</p>
               <p>Weak-supervision scores are uncalibrated. Active-fight scores and potential-onset candidates are separate; a high score does not confirm violence.</p>

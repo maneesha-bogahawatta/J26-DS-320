@@ -1,5 +1,89 @@
 # Original team dashboard + Component 03
 
+## Inline skeleton playback fix — 22 October 2026
+
+After a successful upload, the main player previously kept displaying the
+original blob URL. The rendered skeleton output was available only through the
+Annotated video link, so a completed inference run could still look unprocessed.
+The player now defaults to the real `demo.mp4` artifact after completion, with
+Skeleton video / Original video controls. The original video remains available.
+Observed, estimated and missing joint semantics are those already drawn by the
+existing renderer; no new pose estimation or model policy was introduced.
+
+Graph/candidate seeking uses original-video timestamps and subtracts the rendered
+context start when necessary. The timeline shows the same original-video clock.
+Original-image detection boxes are not overlaid on the footer-containing render.
+Events outside an excerpt remain reviewable on the original upload. Failed jobs
+keep the original video, explain that no skeleton artifact was generated, and
+offer their inference log instead of displaying a fabricated result.
+
+Verified in the browser on the built dashboard at `http://127.0.0.1:8002/`:
+
+- Authentic cached F_147 run `04e6e4e9673943c58d4f78c22084ed04` completed with
+  37/40 usable decisions and two research candidates. Its 13.4333-second context
+  start was accounted for: clicking the 18.2333-second candidate sought to 4.8
+  seconds in the annotated recording. The player decoded the 640x476 video.
+- Fresh F_99 file-chooser upload `9ad98d7b77b648d4a4c42cfdedd4372a` completed
+  with 15/40 usable decisions and no candidates. The main player automatically
+  loaded its 640x476 skeleton artifact. Switching to the 640x360 original blob
+  and back preserved the selected playback time (approximately 4.007 seconds).
+  Skeletons were visually confirmed in the annotated player; neither view had
+  a media error. This verifies playback, not an improvement in fight detection.
+- All 15 frontend tests and the C3 production build passed. Lint had no errors
+  and retained the same six pre-existing warnings in unrelated components.
+
+The port-8000 process still has the pre-fix worker loaded. Its latest inspected
+F_99 failure `e18a58f924754a5881de932ae8cc11f7` contains the original missing-torch
+error. Use port 8002 now, or manually restart port 8000 as described below.
+The selected baseline checkpoint SHA-256 remains
+`954559460c10b85c25b532b5f7aa7d28edb141f38b308ebaeb199aca6c4d7820`.
+
+## Frontend inference runtime fix — 22 October 2026
+
+The F_98 and F_99 recorded uploads failed before pose extraction with
+`ModuleNotFoundError: No module named 'torch'`. The API was started using system
+Python, which has no model dependencies, and DemoWorkbench inherited that
+interpreter for its inference subprocess. The repository `.venv` already has
+the required dependencies; no new model or package installation was needed.
+
+`src/demo_server.py::inference_python` now selects the repository `.venv`
+interpreter for inference even when the API uses another Python. Standalone
+installations without that virtualenv retain their current interpreter. Each
+job logs its interpreter, and failures expose the final worker error in the
+job response instead of only an exit code. Checkpoints and thresholds are unchanged.
+
+Verification: 14 workbench tests, 11 shared-backend integration tests and all
+13 frontend tests passed. The C3 production build passed. The actual F_98 upload
+was submitted through the original dashboard's file chooser; F_99 was checked
+through the same upload/job API. Both completed, generated scores and annotated
+video, and passed media range and ZIP export checks. F_98 had 6/15 usable pose
+decisions; F_99 had 15/40. Both returned zero candidates. Successful execution
+does not establish successful fight recognition or improved model performance.
+Machine-readable evidence: `outputs/runtime_fix_v1/verification.json`.
+
+The fixed original dashboard is running at `http://127.0.0.1:8002/` with an
+isolated job directory. Automatic approval review blocked stopping the existing
+port-8000 backend and also blocked a detached background launch. A foreground
+tool-managed server was started safely on port 8002. The old port-8000 process
+still has the earlier worker code loaded and requires a manual restart.
+
+To use the existing frontend at `http://127.0.0.1:5173/`, press **Ctrl+C** in
+the old backend terminal, then run:
+
+```powershell
+cd C:\Users\Kulanjana\Downloads\J26-DS-320
+.\components\c3_aggression_detection\RUN_C3_DASHBOARD.ps1 -Port 8000
+```
+
+Leave that terminal running. The existing Vite server proxies to port 8000;
+reload its page after restarting the backend. To start the separately verified
+dashboard later, use port 8002 with its own preserved job history:
+
+```powershell
+cd C:\Users\Kulanjana\Downloads\J26-DS-320
+.\components\c3_aggression_detection\RUN_C3_DASHBOARD.ps1 -Port 8002 -StateDirectory outputs/runtime_fix_v1/dashboard_state
+```
+
 Completed locally on 21 October 2026 (Asia/Colombo).
 
 - Frontend: `dashboard/frontend/` — original React/TypeScript/Vite application.

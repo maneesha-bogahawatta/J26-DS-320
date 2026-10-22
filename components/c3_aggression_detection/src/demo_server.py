@@ -54,6 +54,18 @@ def within(path, root):
     return path
 
 
+def inference_python(component_root):
+    """Use the project's model environment even when uvicorn uses system Python."""
+    environment = Path(component_root).resolve().parent.parent / '.venv'
+    for relative in ('Scripts/python.exe', 'bin/python'):
+        executable = environment / relative
+        if executable.is_file():
+            return str(executable)
+    # Standalone installations may already have model dependencies in their
+    # current environment; do not require a repository-local virtualenv there.
+    return sys.executable
+
+
 class DemoWorkbench:
     """One serial inference worker, reusable uploads and versioned job results."""
     def __init__(self, component_root, work_dir=None, runner=None, max_upload_bytes=256*1024*1024):
@@ -201,7 +213,7 @@ class DemoWorkbench:
 
     def _run_inference(self, job, output):
         source = self.sources[job['source_id']]
-        args = [sys.executable, '-m', 'src.predict_advanced', '--out-dir', str(output),
+        args = [inference_python(self.root), '-m', 'src.predict_advanced', '--out-dir', str(output),
                 '--render', '--camera-id', job['camera_id']]
         if source['kind'] == 'cached_context':
             args += ['--video-id', source['video_id'], '--index', str(self.cached_index)]
@@ -218,10 +230,14 @@ class DemoWorkbench:
         env['PYTHONDONTWRITEBYTECODE'] = '1'; env['YOLO_AUTOINSTALL'] = 'false'
         env['YOLO_CONFIG_DIR'] = str(self.root/'data/phase1_work/ultralytics')
         with (output.parent/'inference.log').open('w', encoding='utf-8') as log:
+            log.write(f'C3 inference Python: {args[0]}\n')
+            log.flush()
             result = subprocess.run(args, cwd=self.root, env=env, stdout=log,
                 stderr=subprocess.STDOUT, timeout=3600, check=False)
         if result.returncode:
-            raise RuntimeError(f'Inference exited with code {result.returncode}; see inference.log')
+            lines = (output.parent/'inference.log').read_text(encoding='utf-8', errors='replace').splitlines()
+            detail = next((line.strip() for line in reversed(lines) if line.strip()), 'No worker error output')
+            raise RuntimeError(f'Inference exited with code {result.returncode}: {detail[:400]}; see inference.log')
 
     def folder(self, job_id):
         if not ID_PATTERN.fullmatch(job_id) or job_id not in self.jobs:

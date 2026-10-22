@@ -5,13 +5,69 @@ import http.client
 import io
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 import zipfile
 
-from src.demo_server import DemoHTTPServer, DemoWorkbench, write_json
+from src.demo_server import DemoHTTPServer, DemoWorkbench, inference_python, write_json
+
+
+class InferenceRuntimeTests(unittest.TestCase):
+    def test_repository_model_environment_is_used_from_another_server_python(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            component = repository/'components/c3_aggression_detection'
+            component.mkdir(parents=True)
+            executable = repository/'.venv/Scripts/python.exe'
+            executable.parent.mkdir(parents=True)
+            executable.touch()
+            workbench = DemoWorkbench(component)
+            try:
+                workbench.sources['cache:val'] = dict(kind='cached_context', video_id='val')
+                output = workbench.jobs_dir/'runtime-check/result'
+                output.parent.mkdir()
+                with patch('src.demo_server.subprocess.run', return_value=subprocess.CompletedProcess([], 0)) as run:
+                    workbench._run_inference(dict(source_id='cache:val', camera_id='test', research_alerts=False), output)
+                self.assertEqual(Path(run.call_args.args[0][0]), executable.resolve())
+                self.assertEqual(run.call_args.args[0][1:3], ['-m', 'src.predict_advanced'])
+                self.assertNotIn('--research-alerts', run.call_args.args[0])
+                self.assertIn(str(executable.resolve()), (output.parent/'inference.log').read_text())
+            finally:
+                workbench.close()
+
+    def test_standalone_installation_keeps_current_python(self):
+        with tempfile.TemporaryDirectory() as directory:
+            component = Path(directory)/'components/c3_aggression_detection'
+            component.mkdir(parents=True)
+            self.assertEqual(inference_python(component), sys.executable)
+            executable = Path(directory)/'.venv/bin/python'
+            executable.parent.mkdir(parents=True)
+            executable.touch()
+            self.assertEqual(Path(inference_python(component)), executable.resolve())
+
+    def test_worker_exception_is_visible_without_hiding_failed_job(self):
+        with tempfile.TemporaryDirectory() as directory:
+            component = Path(directory)/'components/c3_aggression_detection'
+            component.mkdir(parents=True)
+            workbench = DemoWorkbench(component)
+            try:
+                workbench.sources['cache:val'] = dict(kind='cached_context', video_id='val')
+                output = workbench.jobs_dir/'runtime-check/result'
+                output.parent.mkdir()
+                def fail(args, **kwargs):
+                    kwargs['stdout'].write("Traceback (most recent call last):\nModuleNotFoundError: No module named 'torch'\n")
+                    return subprocess.CompletedProcess(args, 1)
+                with patch('src.demo_server.subprocess.run', side_effect=fail):
+                    with self.assertRaisesRegex(RuntimeError, "ModuleNotFoundError: No module named 'torch'"):
+                        workbench._run_inference(dict(source_id='cache:val', camera_id='test', research_alerts=False), output)
+                self.assertIn('Traceback', (output.parent/'inference.log').read_text())
+            finally:
+                workbench.close()
 
 
 class DemoServerTests(unittest.TestCase):

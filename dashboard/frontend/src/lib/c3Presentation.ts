@@ -1,4 +1,14 @@
 /** Presentation only: missing pose/score values never become zero predictions. */
+import type { C3Job } from '../api/c3Client';
+
+/** A rendered artifact is required even for a completed, all-abstention run. */
+export function annotatedContext(job: C3Job | undefined): { start: number; end: number } | null {
+  const range = job?.prediction?.source_context;
+  if (job?.status !== 'completed' || !job.files?.includes('demo.mp4') || !range ||
+      !Number.isFinite(range[0]) || !Number.isFinite(range[1]) || range[0] < 0 || range[1] <= range[0]) return null;
+  return { start: range[0], end: range[1] };
+}
+
 export interface ScoreRow {
   t_s: number | string;
   weak_onset_score: number | string | null;
