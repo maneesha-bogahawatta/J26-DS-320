@@ -1,0 +1,5 @@
+# Optional: only required for pretrained YAMNet class scores.
+# Use Python 3.10 or 3.11 and a separate virtualenv if TensorFlow/PyTorch dependencies conflict.
+numpy>=1.26,<2
+tensorflow>=2.16,<2.20
+tensorflow-hub>=0.16,<0.18

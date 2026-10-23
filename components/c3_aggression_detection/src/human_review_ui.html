@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C3 independent clip review</title>
+<style>
+body{font:16px system-ui,sans-serif;background:#111b23;color:#edf2f5;max-width:1050px;margin:24px auto;padding:0 20px}h1{font-size:26px}p{line-height:1.5;color:#c0d2de}button,select,input,textarea{font:inherit;padding:9px;border-radius:5px;border:1px solid #567182;background:#20323f;color:#fff}button{cursor:pointer;background:#254e61}button:hover{background:#35677c}input[type=number]{width:125px}label{display:block;margin:12px 0 5px}textarea{width:95%;min-height:60px}video{width:100%;max-height:450px;background:#000}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.card{border:1px solid #354e5e;padding:16px;margin:16px 0;border-radius:10px}#message{white-space:pre-wrap;color:#ffd58c}.small{font-size:14px}.field{flex:1;min-width:210px}#clock{font-variant-numeric:tabular-nums;color:#8de1dd}input[type=checkbox]{width:20px;height:20px}a{color:#9bdae8}
+</style>
+<h1>Independent clip review · <span id="role"></span></h1>
+<p>Watch the clip and record only visible evidence. All timestamps below use the <b>original video</b> clock. A precursor is an observed aggressive cue before confirmed physical contact. The current early target uses the last 3 seconds before contact. Do not infer a precursor simply because a fight follows.</p>
+<div class="card">
+<div class="row"><label>Your reviewer ID <input id="reviewer" placeholder="Your own ID" autocomplete="off"></label><label><input type="checkbox" id="independent"> I personally reviewed this footage independently.</label></div>
+<p class="small">Each person starts with a blank page and exports their own JSON. Do not load another person's decisions before your independent review. Progress stays in this page until you download it. Export before closing.</p>
+<div class="row"><button id="download">Download my review JSON</button><label>Resume my own saved JSON <input type="file" id="resume" accept=".json"></label></div>
+</div>
+<div class="row"><button id="previous">Previous</button><select id="clips"></select><button id="next">Next</button><span id="progress"></span></div>
+<div class="card"><video id="video" controls preload="metadata"></video>
+<div class="row"><strong id="clock">Original time: —</strong><label>Playback <select id="speed"><option value="1">1×</option><option value="0.5">0.5×</option><option value="0.25">0.25×</option></select></label><button id="back">−0.1 s</button><button id="forward">+0.1 s</button></div>
+<p id="bounds" class="small"></p><p class="small">Silent visual review copy. Browser controls show clip-relative time; use the original clock above for labels. If contact or the relevant people are not visible, choose uncertain.</p></div>
+<div class="card">
+<label>Decision <select id="label"><option value="unreviewed">Unreviewed</option><option value="precursor">Observed precursor before confirmed contact</option><option value="non_aggressive">No aggression within reviewed coverage</option><option value="active_fight">Active physical fight</option><option value="already_violent">Already violent at clip start</option><option value="uncertain">Uncertain / insufficient visible evidence</option></select></label>
+<p class="small">For non-aggressive decisions, narrow coverage to a continuous interval containing no aggression or physical fight. Unknown time outside coverage stays unlabeled.</p>
+<div class="row"><div class="field"><label>Reviewed coverage start (s)</label><input type="number" step="0.001" id="coverageStart"><button data-mark="coverageStart">Set current</button></div><div class="field"><label>Reviewed coverage end (s)</label><input type="number" step="0.001" id="coverageEnd"><button data-mark="coverageEnd">Set current</button></div></div>
+<div class="row"><div class="field"><label>Observed precursor start (s)</label><input type="number" step="0.001" id="cueStart"><button data-mark="cueStart">Set current</button></div><div class="field"><label>Observed precursor end (s)</label><input type="number" step="0.001" id="cueEnd"><button data-mark="cueEnd">Set current</button></div></div>
+<label>Confirmed first physical contact (s)</label><input type="number" step="0.001" id="contact"><button data-mark="contact">Set current</button>
+<label>Observed active-fight intervals (original seconds, JSON pairs)</label><input id="fight" value="[]" style="width:90%" placeholder="[[12.3,14.5]]">
+<label>Evidence and uncertainty notes</label><textarea id="notes" placeholder="Describe visible actions, people involved, occlusion, or why uncertain."></textarea>
+<p class="small">A single review remains provisional. Two distinct attested humans must agree on label and exact coverage/cue/contact/fight timestamps before import creates verified evidence. Disagreements need a separate adjudication; the importer never averages decisions.</p>
+</div>
+<div id="message" role="status"></div>
+<script>
+'use strict';
+const config=__REVIEW_CONFIG__;
+const $=id=>document.getElementById(id);
+let form=structuredClone(config.form), selected=0;
+const current=()=>config.clips[selected];
+const record=()=>form.records.find(r=>r.clip_id===current().clip_id);
+const number=id=>$(id).value===''?null:Number($(id).value);
+function save(){
+ const r=record(),a=number('cueStart'),b=number('cueEnd');
+ if((a===null)!==(b===null))throw Error('Fill both precursor bounds, or clear both.');
+ const fight=JSON.parse($('fight').value||'[]');
+ if(!Array.isArray(fight))throw Error('Fight intervals must be JSON pairs.');
+ Object.assign(r,{review_label:$('label').value,reviewed_ranges_s:[[number('coverageStart'),number('coverageEnd')]],precursors:a===null?[]:[[a,b]],first_physical_contact_s:number('contact'),verified_fight_intervals:fight,review_notes:$('notes').value});
+ form.reviewer=$('reviewer').value.trim();form.independent_human_review=$('independent').checked;
+ $('progress').textContent=`${form.records.filter(r=>r.review_label!=='unreviewed').length}/${form.records.length} reviewed`;
+}
+function show(){
+ const c=current(),r=record();$('clips').value=String(selected);
+ $('video').src=c.media;$('video').playbackRate=Number($('speed').value);
+ $('bounds').textContent=`Original coverage available: ${c.clip_start_s.toFixed(3)}–${c.clip_end_s.toFixed(3)} s`;
+ $('label').value=r.review_label;
+ $('coverageStart').value=r.reviewed_ranges_s[0]?.[0]??c.clip_start_s;
+ $('coverageEnd').value=r.reviewed_ranges_s[0]?.[1]??c.clip_end_s;
+ $('cueStart').value=r.precursors[0]?.[0]??'';$('cueEnd').value=r.precursors[0]?.[1]??'';
+ $('contact').value=r.first_physical_contact_s??'';$('fight').value=JSON.stringify(r.verified_fight_intervals);$('notes').value=r.review_notes||'';
+ $('previous').disabled=selected===0;$('next').disabled=selected===config.clips.length-1;
+ $('progress').textContent=`${form.records.filter(r=>r.review_label!=='unreviewed').length}/${form.records.length} reviewed`;
+ $('clock').textContent=`Original time: ${c.clip_start_s.toFixed(3)} s`;
+}
+function action(fn){try{$('message').textContent='';fn()}catch(e){$('message').textContent=e.message}}
+function move(i){action(()=>{save();selected=i;show()})}
+$('role').textContent=form.split==='train'?'Training review':'Separate validation review';
+config.clips.forEach((c,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`Clip ${i+1} of ${config.clips.length}`;$('clips').appendChild(o)});
+$('clips').onchange=()=>move(Number($('clips').value));$('previous').onclick=()=>move(selected-1);$('next').onclick=()=>move(selected+1);
+$('video').ontimeupdate=()=>$('clock').textContent=`Original time: ${(current().clip_start_s+$('video').currentTime).toFixed(3)} s`;
+$('speed').onchange=()=>$('video').playbackRate=Number($('speed').value);
+$('back').onclick=()=>$('video').currentTime=Math.max(0,$('video').currentTime-.1);
+$('forward').onclick=()=>$('video').currentTime=Math.min($('video').duration,$('video').currentTime+.1);
+document.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>{$(b.dataset.mark).value=Math.min(current().clip_end_s,current().clip_start_s+$('video').currentTime).toFixed(3)});
+$('download').onclick=()=>action(()=>{
+ save();if(form.records.some(r=>r.review_label!=='unreviewed')&&(!form.reviewer||!form.independent_human_review))throw Error('Enter your own reviewer ID and attest to personal independent review before exporting decisions.');
+ const blob=new Blob([JSON.stringify(form,null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=`${form.split}_${(form.reviewer||'unreviewed').replace(/[^a-z0-9_-]/gi,'_')}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('message').textContent='Downloaded. Keep each reviewer’s original JSON; import writes a new annotation version.';
+});
+$('resume').onchange=async()=>{try{
+ const loaded=JSON.parse(await $('resume').files[0].text());
+ if(loaded.schema!==form.schema||loaded.pack_sha256!==form.pack_sha256||loaded.split!==form.split)throw Error('Saved review belongs to a different pack or split.');
+ if(!Array.isArray(loaded.records)||loaded.records.length!==config.form.records.length||loaded.records.some((r,i)=>r.clip_id!==config.form.records[i].clip_id))throw Error('Saved review has different clip IDs.');
+ form=loaded;$('reviewer').value=form.reviewer||'';$('independent').checked=form.independent_human_review===true;show();$('message').textContent='Your saved review loaded.';
+}catch(e){$('message').textContent=e.message}};
+show();
+</script>
+</html>

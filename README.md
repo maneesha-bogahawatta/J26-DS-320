@@ -104,8 +104,48 @@ cp .env.example .env
 python shared/detection/detect.py --source sample.mp4
 
 # 6. Run your component
-python components/c4_critical_incidents/run.py --source sample.mp4
+python components/c3_aggression_detection/run.py --source sample.mp4 --seconds 8
 ```
+
+Component 03 follows the team guide's `components/c3_aggression_detection/`
+workspace. Its `run.py` delegates to the existing recorded-video research pipeline;
+models, datasets, evaluation and local artifacts remain inside that component.
+See its README for the folder map and optional arguments.
+
+### Frontend
+
+The original team React application is under `dashboard/frontend`, with its
+shared backend under `dashboard/backend`. The obsolete root dashboard copies
+were moved to a verified external archive. From the repository root, these
+forwarding scripts target the original C3-enabled UI:
+
+```powershell
+npm run frontend:install
+npm run frontend:dev
+```
+
+You can also work directly from the frontend directory:
+
+```powershell
+cd dashboard/frontend
+npm ci
+npm run dev:c3
+```
+
+The development frontend is at `http://localhost:5173`. Its API proxy expects
+the original backend on port 8000. Start that backend from another terminal at
+the repository root:
+
+```powershell
+.\components\c3_aggression_detection\RUN_C3_DASHBOARD.ps1
+```
+
+That command also serves the prepared frontend at `http://127.0.0.1:8000/`, so
+Vite is optional for the built demonstration. Integration details, model limits
+and archive information are in `components/c3_aggression_detection/DASHBOARD_INTEGRATION.md`.
+
+The shared Check screen has Recorded video and Live camera options. Recorded video
+also runs C3 when enabled; there is no separate C3 research video tab.
 
 ## Branch Strategy
 

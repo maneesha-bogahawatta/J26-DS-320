@@ -1,0 +1,12 @@
+{
+  "name": "j26-ds-320",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "frontend:install": "npm --prefix dashboard/frontend ci",
+    "frontend:dev": "npm --prefix dashboard/frontend run dev:c3",
+    "frontend:build": "npm --prefix dashboard/frontend run build:c3",
+    "frontend:test": "npm --prefix dashboard/frontend test",
+    "frontend:lint": "npm --prefix dashboard/frontend run lint"
+  }
+}

@@ -1,0 +1,26 @@
+data/cache/
+data/videos/
+weights/*.pt
+outputs/
+output/
+tmp/
+__pycache__/
+.pytest_cache/
+.venv/
+data/foundation/
+data/pose_cache/
+data/phase1_work/
+data/downloads/
+weights/
+*.npz
+*.npy
+Ultralytics/
+runs/
+data/reviewed_annotations/quick_human_*/
+data/reviewed_annotations/completed_human_*/
+data/reviewed_annotations/ai_visual_*/
+
+# Isolated packages and trust diagnostics for the supplied React dashboard API.
+data/dashboard_deps_v1/
+data/dashboard_node_tools_v1/
+data/dashboard_npm_cache_v1/
