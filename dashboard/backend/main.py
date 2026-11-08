@@ -38,6 +38,17 @@ from schemas import (
 from store import DuplicateEventError, EventNotFoundError, EventStore
 from detect import build_router, load_detectors
 
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from detect import UPLOAD_DIR
+
+# 1. First instantiate FastAPI app
+app = FastAPI(title="Spatial Anomaly Detection API")
+
+# 2. Then mount static uploads directory
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+
 API_VERSION = "1.1.0"
 
 app = FastAPI(

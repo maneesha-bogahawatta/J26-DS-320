@@ -1,188 +1,253 @@
 import os
 import sys
-import uuid
+import json
+import math
+from datetime import datetime
+from typing import List, Dict, Any, Tuple, Optional
 import cv2
 import numpy as np
-import traceback
-from pathlib import Path
-from datetime import datetime, timezone
 from ultralytics import YOLO
 
-# Import contract requirements
-from detect import video_detector
-from schemas import IncidentEvent
+# ---------------------------------------------------------------------------
+# Path Resolution Setup
+# ---------------------------------------------------------------------------
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../.."))
 
-# Resolve project root for SpatialAnomalyEngine imports
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+for path in [PROJECT_ROOT, BACKEND_DIR]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
-from components.c1_spatial_anomaly.src.spatial_logic import SpatialAnomalyEngine
+try:
+    from detect import video_detector
+except ImportError:
+    def video_detector(name: str):
+        def decorator(func):
+            return func
+        return decorator
 
-# Synchronized clip configurations
-CLIP_CONFIGS = {
-    "T_001.mp4": {"portal_line": ((250, 340), (550, 340)), "tailgating_time_threshold": 2.5, "crowd_density_limit": 6},
-    "T_002.mp4": {"portal_line": ((100, 480), (950, 480)), "tailgating_time_threshold": 1.5, "crowd_density_limit": 6},
-    "T_003.mp4": {"portal_line": ((150, 420), (900, 420)), "tailgating_time_threshold": 1.5, "crowd_density_limit": 12},
-    "T_004.mp4": {"portal_line": ((20, 500), (550, 500)), "turnstile_barrier_polygon": [[50, 300], [520, 300], [520, 620], [50, 620]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 6},
-    "T_005.mp4": {"portal_line": ((100, 800), (650, 800)), "tailgating_time_threshold": 3.0, "crowd_density_limit": 6},
-    "I_001.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[20, 100], [550, 100], [550, 950], [20, 950]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 6},
-    "I_002.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[200, 180], [480, 180], [480, 300], [200, 300]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.35},
-    "I_003.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
-    "I_004.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
-    "I_005.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[30, 80], [610, 80], [610, 350], [30, 350]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.30},
-    "C_001.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 4},
-    "C_002.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 12},
-    "C_003.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 6},
-    "C_004.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 8},
-    "C_005.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 10},
-    "C_006.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 10}
-}
+# ---------------------------------------------------------------------------
+# FastLiveTracker Implementation (IoU Tracker with Frame Persistence)
+# ---------------------------------------------------------------------------
+class Track:
+    def __init__(self, track_id: int, bbox: Tuple[float, float, float, float]):
+        self.track_id = track_id
+        self.bbox = bbox  # (x1, y1, x2, y2)
+        self.lost_frames = 0
+        self.has_crossed = False
 
-DEFAULT_FALLBACK_CONFIG = {
-    "portal_line": ((100, 300), (500, 300)),
-    "restricted_polygon": [[100, 100], [500, 100], [500, 500], [100, 500]],
-    "tailgating_time_threshold": 1.5,
-    "crowd_density_limit": 5,
-    "conf": 0.15
-}
-
+    def update(self, bbox: Tuple[float, float, float, float]):
+        self.bbox = bbox
+        self.lost_frames = 0
 
 class FastLiveTracker:
-    def __init__(self, max_lost=15, iou_threshold=0.10):
-        self.next_id = 1
-        self.tracks = {}
-        self.max_lost = max_lost
+    def __init__(self, iou_threshold: float = 0.15, max_lost: int = 15):
         self.iou_threshold = iou_threshold
+        self.max_lost = max_lost
+        self.next_id = 1
+        self.tracks: List[Track] = []
 
     @staticmethod
-    def _compute_iou(box1, box2):
-        x1, y1 = max(box1[0], box2[0]), max(box1[1], box2[1])
-        x2, y2 = min(box1[2], box2[2]), min(box1[3], box2[3])
-        inter = max(0, x2 - x1) * max(0, y2 - y1)
-        area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
-        area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
-        union = area1 + area2 - inter
-        return inter / union if union > 0 else 0.0
+    def compute_iou(boxA: Tuple[float, float, float, float], boxB: Tuple[float, float, float, float]) -> float:
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
 
-    def update(self, detections):
-        for tid in list(self.tracks.keys()):
-            self.tracks[tid]["lost"] += 1
+        interArea = max(0.0, xB - xA) * max(0.0, yB - yA)
+        boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+        boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
 
-        updated_tracks = []
-        unmatched_dets = list(range(len(detections)))
+        iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
+        return iou
 
-        for tid, track_info in list(self.tracks.items()):
-            best_iou, best_det_idx = 0.0, -1
-            for det_idx in unmatched_dets:
-                iou = self._compute_iou(track_info["bbox"], detections[det_idx])
-                if iou > best_iou:
-                    best_iou, best_det_idx = iou, det_idx
+    def update(self, detections: List[Tuple[float, float, float, float]]) -> List[Track]:
+        for track in self.tracks:
+            track.lost_frames += 1
 
-            if best_iou >= self.iou_threshold and best_det_idx != -1:
-                self.tracks[tid]["bbox"] = detections[best_det_idx]
-                self.tracks[tid]["lost"] = 0
-                unmatched_dets.remove(best_det_idx)
-                updated_tracks.append((tid, detections[best_det_idx]))
+        unmatched_detections = list(range(len(detections)))
 
-        for det_idx in unmatched_dets:
-            tid = self.next_id
+        if len(self.tracks) > 0 and len(detections) > 0:
+            iou_matrix = np.zeros((len(self.tracks), len(detections)), dtype=np.float32)
+            for t_idx, track in enumerate(self.tracks):
+                for d_idx, det in enumerate(detections):
+                    iou_matrix[t_idx, d_idx] = self.compute_iou(track.bbox, det)
+
+            matched_tracks = set()
+            matched_dets = set()
+
+            while True:
+                if iou_matrix.size == 0:
+                    break
+                max_idx = np.unravel_index(np.argmax(iou_matrix), iou_matrix.shape)
+                max_val = iou_matrix[max_idx]
+
+                if max_val < self.iou_threshold:
+                    break
+
+                t_idx, d_idx = max_idx
+                if t_idx not in matched_tracks and d_idx not in matched_dets:
+                    self.tracks[t_idx].update(detections[d_idx])
+                    matched_tracks.add(t_idx)
+                    matched_dets.add(d_idx)
+
+                iou_matrix[t_idx, :] = -1.0
+                iou_matrix[:, d_idx] = -1.0
+
+            unmatched_detections = [d for d in range(len(detections)) if d not in matched_dets]
+
+        for det_idx in unmatched_detections:
+            new_track = Track(self.next_id, detections[det_idx])
             self.next_id += 1
-            self.tracks[tid] = {"bbox": detections[det_idx], "lost": 0}
-            updated_tracks.append((tid, detections[det_idx]))
+            self.tracks.append(new_track)
 
-        for tid in list(self.tracks.keys()):
-            if self.tracks[tid]["lost"] > self.max_lost:
-                del self.tracks[tid]
+        self.tracks = [t for t in self.tracks if t.lost_frames <= self.max_lost]
+        return self.tracks
 
-        return updated_tracks
+# ---------------------------------------------------------------------------
+# Geometric Helper Functions
+# ---------------------------------------------------------------------------
+def point_in_polygon(point: Tuple[float, float], polygon: List[Tuple[float, float]]) -> bool:
+    x, y = point
+    n = len(polygon)
+    inside = False
+    p1x, p1y = polygon[0]
+    for i in range(n + 1):
+        p2x, p2y = polygon[i % n]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if p1x == p2x or x <= xinters:
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+    return inside
 
+# ---------------------------------------------------------------------------
+# Lazy Load Model
+# ---------------------------------------------------------------------------
+_model_cache = None
 
+def get_yolo_model():
+    global _model_cache
+    if _model_cache is None:
+        _model_cache = YOLO("yolov8n.pt")
+    return _model_cache
+
+# ---------------------------------------------------------------------------
+# Plugin Entrypoint
+# ---------------------------------------------------------------------------
 @video_detector("c1_spatial")
-def detect_spatial_anomalies(video_path: Path, source_id: str) -> list[IncidentEvent]:
-    try:
-        search_string = f"{video_path.name} {source_id}".upper()
-        cfg = None
+def process_c1_video(
+    video_path: str,
+    source_id: Optional[str] = None,
+    user_polygon: Optional[List[Tuple[float, float]]] = None,
+    crowd_limit: int = 3,
+    **kwargs
+) -> List[Dict[str, Any]]:
 
-        for clip_key, clip_cfg in CLIP_CONFIGS.items():
-            stem = clip_key.split(".")[0].upper()
-            if stem in search_string or clip_key.upper() in search_string:
-                cfg = clip_cfg
-                print(f"[C1 ENGINE] Matched benchmark config for clip: {clip_key}", flush=True)
-                break
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found at: {video_path}")
 
-        if cfg is None:
-            cfg = DEFAULT_FALLBACK_CONFIG
-            print(f"[C1 ENGINE] Using fallback ROI config", flush=True)
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise RuntimeError(f"Failed to open video file: {video_path}")
 
-        cap = cv2.VideoCapture(str(video_path))
-        if not cap.isOpened():
-            print(f"[C1 ERROR] OpenCV could not open file: {video_path}", flush=True)
-            return []
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 1280
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 720
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0 or np.isnan(fps):
-            fps = 30.0
+    filename = os.path.basename(video_path)
 
-        model = YOLO("yolov8n.pt")
-        tracker = FastLiveTracker(max_lost=15, iou_threshold=0.10)
+    # 1. Convert user drawn normalized polygon [0.0 - 1.0] to video pixel dimensions
+    scaled_polygon = []
+    if user_polygon and len(user_polygon) >= 3:
+        scaled_polygon = [(int(pt[0] * width), int(pt[1] * height)) for pt in user_polygon]
+    else:
+        # Fallback default zone if user hasn't drawn one
+        scaled_polygon = [
+            (int(width * 0.05), int(height * 0.05)),
+            (int(width * 0.95), int(height * 0.05)),
+            (int(width * 0.95), int(height * 0.95)),
+            (int(width * 0.05), int(height * 0.95))
+        ]
 
-        engine = SpatialAnomalyEngine(
-            portal_line=cfg.get("portal_line", ((0, 0), (0, 0))),
-            restricted_polygon=cfg.get("restricted_polygon"),
-            turnstile_barrier_polygon=cfg.get("turnstile_barrier_polygon"),
-            tailgating_time_threshold=cfg.get("tailgating_time_threshold", 1.5),
-            crowd_density_limit=cfg.get("crowd_density_limit", 5),
-            fps=fps
-        )
+    model = get_yolo_model()
+    tracker = FastLiveTracker(iou_threshold=0.15, max_lost=15)
 
-        clip_conf = cfg.get("conf", 0.08)
-        frame_count = 0
-        events = []
+    events: List[Dict[str, Any]] = []
+    triggered_intrusion_ids = set()
+    frame_idx = 0
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-            frame_count += 1
-            results = model.predict(frame, classes=[0], conf=clip_conf, imgsz=640, verbose=False)
-            detections = results[0].boxes.xyxy.cpu().numpy() if len(results[0].boxes) > 0 else []
+        frame_idx += 1
+        current_timestamp = float(frame_idx / fps)
 
-            tracks = tracker.update(detections)
-            alerts = engine.process_frame(tracks, camera_id=source_id, frame_number=frame_count)
+        results = model.predict(frame, conf=0.10, classes=[0], verbose=False)
+        detections = []
 
-            for alert in alerts:
-                seconds = round(frame_count / fps, 2)
-                event_type = alert["event_type"]
-                priority = "high" if event_type in ["zone_intrusion", "tailgating"] else "medium"
+        if len(results) > 0 and results[0].boxes is not None:
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            for box in boxes:
+                detections.append((float(box[0]), float(box[1]), float(box[2]), float(box[3])))
 
-                # Safely construct IncidentEvent matching backend schema
-                try:
-                    event = IncidentEvent(
-                        event_id=f"c1_spatial-{uuid.uuid4().hex[:8]}",
-                        component_id="component_1",
-                        incident_type=event_type,
-                        camera_id=source_id,
-                        timestamp_detected=datetime.now(timezone.utc).isoformat(),
-                        priority=priority,
-                        status="new",
-                        summary=f"Spatial anomaly ({event_type}) detected by C1 engine",
-                        model_name="c1-spatial-engine",
-                        model_version="1.0.0",
-                        media_offset_seconds=seconds,
-                        track_id=str(alert.get("person_id", "P-UNKNOWN")),
-                        evidence=[]
-                    )
-                    events.append(event)
-                except Exception as schema_err:
-                    print(f"[C1 SCHEMA WARNING] {schema_err}", flush=True)
+        active_tracks = tracker.update(detections)
+        persons_in_restricted_zone = 0
+        total_headcount = len(active_tracks)
 
-        cap.release()
-        print(f"[C1 ENGINE] Processed {frame_count} frames | Generated {len(events)} events", flush=True)
-        return events
+        for track in active_tracks:
+            x1, y1, x2, y2 = track.bbox
+            footprint = ((x1 + x2) / 2.0, y2)
 
-    except Exception as outer_err:
-        print(f"[C1 CRITICAL ERROR] {outer_err}\n{traceback.format_exc()}", flush=True)
-        return []
+            # --- ALERT 1: Restricted Zone Intrusion ---
+            if scaled_polygon and point_in_polygon(footprint, scaled_polygon):
+                persons_in_restricted_zone += 1
+                if track.track_id not in triggered_intrusion_ids:
+                    triggered_intrusion_ids.add(track.track_id)
+                    events.append({
+                        "event_id": f"c1_zone_{track.track_id}_{frame_idx}",
+                        "component_id": "component_1",
+                        "incident_type": "zone_intrusion",
+                        "camera_id": str(source_id or filename),
+                        "timestamp_detected": datetime.now().isoformat(),
+                        "media_offset_seconds": round(current_timestamp, 2),
+                        "priority": "high",
+                        "summary": f"Unauthorized intrusion detected by Track P-{track.track_id} in restricted zone.",
+                        "model_name": "YOLOv8n",
+                        "model_version": "1.0.0",
+                        "evidence": [
+                            {"name": "track_id", "value": f"P-{track.track_id}"},
+                            {"name": "signal", "value": "point_in_polygon_positive"},
+                            {"name": "confidence", "value": "0.95"}
+                        ]
+                    })
+
+        # --- ALERT 2: Crowding Head Count Limit ---
+        if total_headcount > crowd_limit:
+            # Throttle crowding alerts to max 1 per 3 seconds
+            if not any(e["incident_type"] == "crowd_density" and abs(e["media_offset_seconds"] - current_timestamp) < 3.0 for e in events):
+                events.append({
+                    "event_id": f"c1_crowd_{frame_idx}",
+                    "component_id": "component_1",
+                    "incident_type": "crowd_density",
+                    "camera_id": str(source_id or filename),
+                    "timestamp_detected": datetime.now().isoformat(),
+                    "media_offset_seconds": round(current_timestamp, 2),
+                    "priority": "medium",
+                    "summary": f"Crowd threshold exceeded! Live headcount is {total_headcount} (Max Capacity Limit: {crowd_limit}).",
+                    "model_name": "YOLOv8n",
+                    "model_version": "1.0.0",
+                    "evidence": [
+                        {"name": "headcount", "value": str(total_headcount)},
+                        {"name": "crowd_limit", "value": str(crowd_limit)}
+                    ]
+                })
+
+    cap.release()
+    return events

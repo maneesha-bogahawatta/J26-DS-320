@@ -13,20 +13,23 @@ Both reply with the same shape:
     { "events": [IncidentEvent, ...], "detectors_run": ["c1_spatial", ...] }
 """
 
+
 from __future__ import annotations
 
 import importlib
+import json
 import logging
+import os
 import pkgutil
-import re
 import time
-import uuid
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, List, Dict, Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
+# Import C1 detector function
+from detectors.c1_spatial import process_c1_video
 from schemas import IncidentEvent
 from store import DuplicateEventError, EventStore
 
@@ -46,21 +49,17 @@ FRAME_DETECTORS: dict[str, FrameDetector] = {}
 
 def video_detector(name: str) -> Callable[[VideoDetector], VideoDetector]:
     """Register a function(video_path, source_id) -> list[IncidentEvent]."""
-
     def register(fn: VideoDetector) -> VideoDetector:
         VIDEO_DETECTORS[name] = fn
         return fn
-
     return register
 
 
 def frame_detector(name: str) -> Callable[[FrameDetector], FrameDetector]:
     """Register a function(jpeg_bytes, source_id, seconds_since_start) -> list[IncidentEvent]."""
-
     def register(fn: FrameDetector) -> FrameDetector:
         FRAME_DETECTORS[name] = fn
         return fn
-
     return register
 
 
@@ -75,7 +74,7 @@ def load_detectors() -> None:
         try:
             importlib.import_module(f"detectors.{info.name}")
             log.info("loaded detector module %s", info.name)
-        except Exception:  # one broken detector must not take the API down
+        except Exception:
             log.exception("could not load detector module %s", info.name)
 
 
@@ -95,10 +94,10 @@ def _store_all(store: EventStore, events: list[IncidentEvent]) -> list[IncidentE
     return stored
 
 
-def _run(name: str, fn: Callable[..., list[IncidentEvent]], *args) -> list[IncidentEvent]:
+def _run(name: str, fn: Callable[..., list[IncidentEvent]], *args, **kwargs) -> list[IncidentEvent]:
     started = time.perf_counter()
     try:
-        result = fn(*args) or []
+        result = fn(*args, **kwargs) or []
     except Exception:
         log.exception("detector %s failed", name)
         return []
@@ -114,42 +113,54 @@ def build_router(store: EventStore) -> APIRouter:
         """Which models are plugged in right now."""
         return {"video": sorted(VIDEO_DETECTORS), "frame": sorted(FRAME_DETECTORS)}
 
-    @router.post("/video", response_model=DetectResponse)
+    @router.post("/video")
     async def detect_video(
         request: Request,
-        source_id: str = Query(default="upload", max_length=64),
-        filename: str = Query(default="video.mp4", max_length=200),
-    ) -> DetectResponse:
-        """Check an uploaded video with every registered video detector."""
-        UPLOAD_DIR.mkdir(exist_ok=True)
-        safe = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(filename).name)[-80:] or "video.mp4"
-        path = UPLOAD_DIR / f"{uuid.uuid4().hex[:8]}_{safe}"
+        source_id: str,
+        filename: str,
+        crowd_limit: int = 3,
+        polygon: Optional[str] = None
+    ):
+        # 1. Ensure uploads directory exists
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        video_path = os.path.join(UPLOAD_DIR, filename)
 
-        size = 0
-        with path.open("wb") as out:
-            async for chunk in request.stream():
-                size += len(chunk)
-                if size > MAX_VIDEO_BYTES:
-                    out.close()
-                    path.unlink(missing_ok=True)
-                    raise HTTPException(status_code=413, detail="That video is larger than 500 MB.")
-                out.write(chunk)
-        if size == 0:
-            path.unlink(missing_ok=True)
-            raise HTTPException(status_code=400, detail="The video arrived empty.")
+        # 2. Save incoming raw video binary to disk
+        body = await request.body()
+        if body:
+            with open(video_path, "wb") as f:
+                f.write(body)
 
-        events: list[IncidentEvent] = []
-        for name, fn in VIDEO_DETECTORS.items():
-            for event in _run(name, fn, path, source_id):
-                if not event.media_ref:
-                    event.media_ref = f"uploads/{path.name}"
-                events.append(event)
+        if not os.path.exists(video_path):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Uploaded video file could not be found at {video_path}"
+            )
 
-        note = None
-        if not VIDEO_DETECTORS:
-            note = "No video detectors are registered yet, so nothing was checked."
+        # 3. Parse optional user polygon
+        parsed_polygon = None
+        if polygon:
+            try:
+                parsed_polygon = json.loads(polygon)
+            except Exception:
+                parsed_polygon = None
 
-        return DetectResponse(events=_store_all(store, events), detectors_run=sorted(VIDEO_DETECTORS), note=note)
+        # 4. Run C1 Spatial Engine
+        raw_events = process_c1_video(
+            video_path=video_path,
+            source_id=source_id,
+            user_polygon=parsed_polygon,
+            crowd_limit=crowd_limit
+        )
+
+        validated_events = [
+            e if isinstance(e, IncidentEvent) else IncidentEvent.model_validate(e)
+            for e in raw_events
+        ]
+        stored_events = _store_all(store, validated_events)
+
+        return {"events": stored_events, "detectors_run": ["c1_spatial"]}
+    
 
     @router.post("/frame", response_model=DetectResponse)
     async def detect_frame(

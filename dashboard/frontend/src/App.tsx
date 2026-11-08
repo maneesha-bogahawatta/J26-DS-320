@@ -21,7 +21,6 @@
  * All data comes through `useEvents`, which talks to the swappable API layer,
  * so nothing here knows whether the alerts are practice data or real ones.
  */
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 import { useEvents } from './hooks/useEvents';
@@ -40,7 +39,6 @@ import { EventHistory } from './components/EventHistory';
 import { IntegrationPanel } from './components/IntegrationPanel';
 import { EmptyState, ErrorState } from './components/States';
 
-/** Below this, the list and the open alert are separate screens. */
 const WIDE_QUERY = '(min-width: 1000px)';
 
 function useIsWide(): boolean {
@@ -66,7 +64,6 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('check');
   const [checkMode, setCheckMode] = useState<CheckMode>('home');
   const [liveOn, setLiveOn] = useState(false);
-  /** Uploaded files and the live camera, so alerts from them have a readable place name. */
   const [checkSources, setCheckSources] = useState<CameraSource[]>([]);
   const [filter, setFilter] = useState<ListFilter>('new');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -87,10 +84,6 @@ export default function App() {
 
   const unreviewedCount = useMemo(() => events.filter(needsLook).length, [events]);
 
-  /**
-   * On a wide screen something is always open, so the right pane is never
-   * blank. On a narrow one nothing is open until the officer taps a card.
-   */
   const openEvent = useMemo(() => {
     if (openId) {
       const found = events.find((e) => e.event_id === openId);
@@ -113,33 +106,6 @@ export default function App() {
     setScreen('alerts');
   }, []);
 
-  /** Something was found on the Check screen: put it in Alerts. */
-  const handleFound = useCallback(
-    (found: IncidentEvent[], source: { id: string; label: string }) => {
-      setCheckSources((prev) =>
-        prev.some((c) => c.camera_id === source.id)
-          ? prev
-          : [
-              ...prev,
-              {
-                camera_id: source.id,
-                label: source.label,
-                kind: source.id === LIVE_SOURCE_ID ? 'live_stream' : 'recorded_clip',
-                media_ref: null,
-                source_note: 'Added from the Check screen.',
-              },
-            ],
-      );
-      if (found.length === 0) return;
-      if (detector.mode === 'http') {
-        // The detection server has already stored them; just fetch.
-        void refresh();
-      } else {
-        for (const event of found) void addEvent(event).catch(() => undefined);
-      }
-    },
-    [addEvent, refresh],
-  );
 
   const handleOpenAlert = useCallback((eventId: string) => {
     setOpenId(eventId);
@@ -154,9 +120,50 @@ export default function App() {
     [addEvent],
   );
 
-  // On narrow screens the open alert IS the screen, so the list is hidden.
   const showList = wide || !openEvent;
   const showDetail = Boolean(openEvent) && (wide || Boolean(openId));
+
+  /** Something was found on the Check screen: put it in Alerts. */
+  const handleFound = useCallback(
+    (
+      found: IncidentEvent[],
+      source: { id: string; label: string; media_ref?: string | null }
+    ) => {
+      setCheckSources((prev) => {
+        const exists = prev.some((c) => c.camera_id === source.id);
+        if (exists) {
+          return prev.map((c) =>
+            c.camera_id === source.id
+              ? { ...c, media_ref: source.media_ref ?? c.media_ref }
+              : c
+          );
+        }
+        return [
+          ...prev,
+          {
+            camera_id: source.id,
+            label: source.label,
+            kind: source.id === LIVE_SOURCE_ID ? 'live_stream' : 'recorded_clip',
+            media_ref:
+              source.media_ref ??
+              `http://localhost:8000/uploads/${encodeURIComponent(source.label)}`,
+            source_note: 'Added from the Check screen.',
+          },
+        ];
+      });
+
+      if (found.length > 0) {
+        setOpenId(found[0].event_id);
+      }
+
+      if (detector.mode === 'http') {
+        void refresh();
+      } else {
+        for (const event of found) void addEvent(event).catch(() => undefined);
+      }
+    },
+    [addEvent, refresh],
+  );
 
   return (
     <div className="app">
@@ -181,8 +188,6 @@ export default function App() {
           </div>
         ) : null}
 
-        {/* Kept mounted (just hidden) so a camera keeps watching while the
-            officer looks at Alerts. */}
         <div className="screen-check" hidden={screen !== 'check'}>
           <CheckScreen
             mode={checkMode}

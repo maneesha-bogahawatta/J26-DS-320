@@ -11,3 +11,6 @@ the API starts, so registering is just:
 Files starting with "_" are skipped — `_example_c4.py` shows the full shape
 without being loaded. Copy it, rename it, and fill in your model.
 """
+from .c1_spatial import process_c1_video
+
+__all__ = ["process_c1_video"]

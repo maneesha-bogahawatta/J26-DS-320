@@ -26,7 +26,7 @@ CLIP_CONFIGS = {
     "I_001.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[20, 100], [550, 100], [550, 950], [20, 950]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 6},
     "I_002.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[200, 180], [480, 180], [480, 300], [200, 300]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.35},
     "I_003.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
-    "I_004python components/c1_spatial_anomaly/tests/evaluate_staged.py.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
+    "I_004.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[10, 40], [1210, 40], [1210, 710], [10, 710]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.08},
     "I_005.mp4": {"portal_line": ((0, 0), (0, 0)), "restricted_polygon": [[30, 80], [610, 80], [610, 350], [30, 350]], "tailgating_time_threshold": 1.5, "crowd_density_limit": 15, "conf": 0.30},
     "C_001.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 4},
     "C_002.mp4": {"portal_line": ((0, 0), (0, 0)), "crowd_density_limit": 12},
@@ -130,11 +130,11 @@ def evaluate_all():
             portal_line=cfg.get("portal_line", ((0, 0), (0, 0))),
             restricted_polygon=cfg.get("restricted_polygon"),
             turnstile_barrier_polygon=cfg.get("turnstile_barrier_polygon"),
-            tailgating_time_threshold=cfg.get("tailgating_time_threshold", 1.5),
+            tailgating_time_threshold=cfg.get("tailgating_time_threshold", 0.8),
             crowd_density_limit=cfg.get("crowd_density_limit", 5),
             fps=fps
         )
-        tracker = FastLiveTracker(max_lost=15, iou_threshold=0.10)
+        tracker = FastLiveTracker(max_lost=4, iou_threshold=0.10)
         clip_conf = cfg.get("conf", 0.08)
 
         expected_events = gt_info.get("expected_events", [])
